@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>🚒中山分隊消防栓地圖(快速定位附近消防栓)</title>
+  <title>🚒 中山分隊消防栓地圖 (局端實景照片完整版)</title>
   
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,416 +12,270 @@
   <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1c1c1e" media="(prefers-color-scheme: dark)">
 
+  <!-- Leaflet & MarkerCluster CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   
   <style>
-    /* ── 全局與字體設定 ─────────────────── */
+    html.is-rotating, html.is-rotating * { transition: none !important; animation: none !important; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { width: 100%; height: 100%; height: 100dvh; overflow: hidden; position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
     body { 
+      width: 100%; height: 100%; height: 100dvh; margin: 0; padding: 0; overflow: hidden; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", "PingFang TC", sans-serif; 
-      height: 100dvh; overflow: hidden; background: #f2f2f7; 
-      -webkit-font-smoothing: antialiased; overscroll-behavior: none;
-      color: #1c1c1e; transition: background-color 0.3s ease;
+      background: #f2f2f7; -webkit-font-smoothing: antialiased; overscroll-behavior: none; color: #1c1c1e; touch-action: pan-x pan-y;
+      -webkit-transform: translateZ(0); transform: translateZ(0);
     }
-    #map { position: fixed; inset: 0; z-index: 0; }
+    #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: 0; }
 
-    /* ── 毛玻璃共用類別 ─────────────────── */
     .glass-panel {
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: saturate(200%) blur(24px);
-      -webkit-backdrop-filter: saturate(200%) blur(24px);
-      border: 1px solid rgba(0, 0, 0, 0.05);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      background: rgba(255, 255, 255, 0.88); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border: 1px solid rgba(0, 0, 0, 0.08); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
 
-    /* ⭐ 上方懸浮搜尋列 (常駐) ─────────────────── */
     #search-card { 
-      position: fixed; 
-      top: calc(16px + env(safe-area-inset-top)); 
-      left: 50%; transform: translateX(-50%);
-      width: calc(100vw - 32px); max-width: 400px; 
-      height: 56px; border-radius: 28px; 
-      display: flex; align-items: center; padding: 0 6px 0 16px;
-      z-index: 500;
+      position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+      width: calc(100vw - 32px); max-width: 420px; height: 54px; border-radius: 27px; 
+      display: flex; align-items: center; padding: 0 6px 0 16px; z-index: 500;
     }
-    
     .search-icon-wrap { font-size: 20px; margin-right: 8px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
-    #search-input { 
-      flex: 1; height: 100%; border: none; background: transparent; 
-      font-size: 16px; outline: none; color: #1c1c1e; font-weight: 500;
-    }
+    #search-input { flex: 1; height: 100%; border: none; background: transparent; font-size: 16px; outline: none; color: #1c1c1e; font-weight: 500; }
     #search-input::placeholder { color: #8e8e93; font-weight: 400; }
-    #btn-clear-search { 
-      background: none; border: none; color: #8e8e93; font-size: 18px; 
-      width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; 
-      border-radius: 50%; transition: background 0.2s;
-    }
-    #btn-clear-search:hover { background: rgba(0,0,0,0.05); color: #ff3b30; }
+    #btn-clear-search { background: none; border: none; color: #8e8e93; font-size: 18px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
     #search-btn { 
       background: linear-gradient(135deg, #ff4b4b, #ff3b30); color: #fff; border: none; 
-      border-radius: 22px; width: 44px; height: 44px; cursor: pointer; font-size: 16px; 
-      display: flex; align-items: center; justify-content: center; 
-      box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3); transition: all 0.2s; flex-shrink: 0; margin-left: 4px;
+      border-radius: 22px; width: 42px; height: 42px; cursor: pointer; font-size: 16px; 
+      display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3); flex-shrink: 0; margin-left: 4px;
     }
-    #search-btn:active { transform: scale(0.92); box-shadow: 0 2px 6px rgba(255, 59, 48, 0.2); }
 
-    /* ⭐ 自動補全下拉選單 */
     #search-suggestions {
-      position: fixed; 
-      top: calc(76px + env(safe-area-inset-top)); 
-      left: 50%; transform: translateX(-50%);
-      width: calc(100vw - 32px); max-width: 400px; 
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-      border-radius: 16px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-      border: 1px solid rgba(0, 0, 0, 0.08); z-index: 490; max-height: 40vh; overflow-y: auto;
-      display: none; flex-direction: column; padding: 6px 0; 
+      position: fixed; top: calc(76px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+      width: calc(100vw - 32px); max-width: 420px; background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 18px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16);
+      border: 1px solid rgba(0, 0, 0, 0.08); z-index: 490; max-height: 45vh; overflow-y: auto; display: none; flex-direction: column; padding: 6px 0; 
     }
-    .suggestion-item {
-      padding: 12px 18px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.04);
-      display: flex; flex-direction: column; justify-content: center; transition: background 0.2s;
-    }
+    .suggestion-item { padding: 12px 18px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.04); display: flex; flex-direction: column; }
     .suggestion-item:last-child { border-bottom: none; }
-    .suggestion-item:active, .suggestion-item:hover { background: rgba(0,0,0,0.04); }
-    .suggestion-title { font-size: 15px; font-weight: 700; color: #1c1c1e; margin-bottom: 3px; }
-    .suggestion-subtitle { font-size: 12px; color: #8e8e93; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .suggestion-item:active { background: rgba(0,0,0,0.05); }
+    .suggestion-title { font-size: 15px; font-weight: 700; color: #1c1c1e; margin-bottom: 2px; }
+    .suggestion-subtitle { font-size: 12px; color: #8e8e93; font-weight: 500; }
 
-    /* ── 指北針與比例尺 ────────────────────────────────── */
     #north-arrow {
-      position: fixed; 
-      top: calc(84px + env(safe-area-inset-top)); 
-      right: 16px;
-      width: 44px; height: 44px; border-radius: 22px; z-index: 600;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      cursor: pointer; transition: transform 0.2s, background 0.2s;
+      position: fixed; top: calc(82px + env(safe-area-inset-top, 0px)); right: 16px;
+      width: 44px; height: 44px; border-radius: 22px; z-index: 600; display: flex; align-items: center; justify-content: center; cursor: pointer;
     }
-    #north-arrow:active { transform: scale(0.92); }
-    #north-arrow svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
     
-    .leaflet-control-scale { 
-      margin-bottom: calc(84px + env(safe-area-inset-bottom)) !important; 
-      margin-left: 16px !important; 
-      z-index: 650; 
-    }
-    .leaflet-control-scale-line {
-      background: rgba(255,255,255,0.85); backdrop-filter: blur(4px);
-      border: 2px solid #1c1c1e; border-top: none; color: #1c1c1e; font-weight: 700;
-      line-height: 1.2; padding: 2px 6px; font-size: 12px; border-radius: 0 0 4px 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
+    .leaflet-control-scale { margin-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important; margin-left: 16px !important; z-index: 650; }
+    .leaflet-control-scale-line { background: rgba(255,255,255,0.85); border: 2px solid #1c1c1e; border-top: none; color: #1c1c1e; font-weight: 700; padding: 2px 6px; font-size: 12px; border-radius: 0 0 4px 4px; }
 
-    /* ── 載入與狀態提示 ────────────────────────────────── */
-    #loading { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; color: #fff; gap: 16px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-    .spinner { width: 44px; height: 44px; border: 4px solid rgba(255, 255, 255, 0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+    #loading { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; color: #fff; gap: 16px; backdrop-filter: blur(8px); }
+    .spinner { width: 44px; height: 44px; border: 4px solid rgba(255, 255, 255, 0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s infinite linear; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #loading-msg { font-size: 15px; font-weight: 600; letter-spacing: 0.5px; }
 
     #status { 
-      position: fixed; top: calc(84px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); 
-      background: rgba(28, 28, 30, 0.9); color: #fff; 
-      padding: 10px 24px; border-radius: 24px; font-size: 14px; font-weight: 600; 
-      pointer-events: none; z-index: 900; white-space: nowrap; display: none; 
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      position: fixed; top: calc(82px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); 
+      background: rgba(28, 28, 30, 0.92); color: #fff; padding: 9px 20px; border-radius: 24px; font-size: 13px; font-weight: 600; 
+      pointer-events: none; z-index: 900; white-space: nowrap; display: none; backdrop-filter: blur(12px);
     }
 
-    /* ── 底部抽屜面板共用設定 (統一介面) ─────────────── */
     .bottom-sheet {
-      position: fixed; bottom: 0; left: 0; right: 0; 
-      border-radius: 32px 32px 0 0; 
-      z-index: 860; 
-      flex-direction: column; display: flex;
-      padding-bottom: env(safe-area-inset-bottom);
-      transform: translateY(100%); 
-      transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-      background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(16px);
-      box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.22);
-      max-height: 75dvh;
+      position: fixed; bottom: 0; left: 0; right: 0; border-radius: 28px 28px 0 0; z-index: 860; 
+      flex-direction: column; display: flex; padding-bottom: env(safe-area-inset-bottom, 16px);
+      transform: translateY(calc(100% + 50px)); opacity: 0; visibility: hidden; pointer-events: none;
+      transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease, visibility 0.32s;
+      background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(20px); box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2); max-height: 82dvh;
     }
-    .bottom-sheet.open { transform: translateY(0); }
+    .bottom-sheet.open { transform: translateY(0); opacity: 1; visibility: visible; pointer-events: auto; }
     
-    .sheet-drag-handle { 
-      width: 100%; height: 28px; display: flex; align-items: flex-end; justify-content: center; 
-      flex-shrink: 0; cursor: grab; padding-bottom: 6px; touch-action: none;
-    }
-    .sheet-drag-handle::before { content: ''; display: block; width: 44px; height: 5px; background: rgba(0, 0, 0, 0.15); border-radius: 4px; }
+    .sheet-drag-handle { width: 100%; height: 24px; display: flex; align-items: flex-end; justify-content: center; flex-shrink: 0; cursor: grab; padding-bottom: 5px; touch-action: none; }
+    .sheet-drag-handle::before { content: ''; display: block; width: 42px; height: 5px; background: rgba(0, 0, 0, 0.15); border-radius: 4px; }
 
-    .panel-top { display: flex; align-items: flex-start; justify-content: space-between; padding: 10px 16px 8px; margin-bottom: 2px; }
-    .panel-title { font-size: 17px; font-weight: 700; color: #1a1a2e; border-left: 4px solid #e74c3c; padding-left: 10px; line-height:1.3; flex: 1; }
+    .panel-top { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px 10px; margin-bottom: 2px; }
+    .panel-title { font-size: 16px; font-weight: 700; color: #1a1a2e; border-left: 4px solid #e74c3c; padding-left: 10px; line-height: 1.3; flex: 1; }
     
+    .count-selector { display: inline-flex; background: rgba(0,0,0,0.06); border-radius: 12px; padding: 2px; margin-left: 8px; }
+    .count-btn { border: none; background: transparent; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; cursor: pointer; color: #666; }
+    .count-btn.active { background: #fff; color: #007aff; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+
     .action-btn { 
       background: #f2f2f7; color: #1c1c1e; border: none; cursor: pointer; font-size: 13px; 
-      font-weight: 700; padding: 5px 12px; border-radius: 12px; display: flex; align-items: center; 
-      gap: 4px; transition: all 0.2s ease; text-decoration: none; white-space: nowrap; flex-shrink: 0; 
+      font-weight: 700; padding: 6px 12px; border-radius: 12px; display: flex; align-items: center; gap: 4px; text-decoration: none; white-space: nowrap; flex-shrink: 0; 
     }
-    .action-btn:active { transform: scale(0.95); background: #e5e5ea; }
     .action-btn.copied { background: #e3f2fd; color: #007aff; }
     .line-btn { background: #e8f5e9; color: #34a853; }
     
-    .panel-close { 
-      background: rgba(0, 0, 0, 0.05); border: none; color: #8e8e93; cursor: pointer; font-size: 16px; 
-      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; 
-      border-radius: 50%; transition: all 0.2s; flex-shrink: 0; margin-left: 8px;
-    }
-    .panel-close:active { background: rgba(255, 59, 48, 0.1); color: #ff3b30; transform: scale(0.9); }
+    .panel-close { background: rgba(0, 0, 0, 0.05); border: none; color: #8e8e93; cursor: pointer; font-size: 16px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-left: 8px; }
 
-    /* 統一後的附近水源清單區塊 (無篩選器) */
-    #nearby-list { overflow-y: auto; flex: 1; padding: 0px 14px 20px; }
+    /* 附近水源清單 */
+    #nearby-list { overflow-y: auto; flex: 1; padding: 0 14px 16px; }
     #nearby-list::-webkit-scrollbar { width: 0px; } 
     
     .nearby-item { 
-      background: #ffffff; border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; 
-      display: flex; align-items: center; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); border: 1px solid rgba(0,0,0,0.06);
-      transition: all 0.2s ease; position: relative; overflow: hidden;
+      background: #ffffff; border-radius: 14px; padding: 11px 12px; margin-bottom: 8px; 
+      display: flex; align-items: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); border: 1px solid rgba(0,0,0,0.06); position: relative; overflow: hidden;
     }
     .nearby-item:last-child { margin-bottom: 0; }
-    .nearby-item:active { transform: scale(0.97); background: #f9f9f9; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04); }
-    
     .nearby-item::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 0 4px 4px 0; background: #f39c12; }
     .nearby-item.dist-near::before { background: #34c759; }
     .nearby-item.dist-mid::before  { background: #ff9500; }
     .nearby-item.dist-far::before  { background: #ff3b30; }
     
-    .item-badge {
-      display: flex; align-items: center; justify-content: center; 
-      width: 26px; height: 26px; border-radius: 50%; 
-      color: #fff; font-size: 13px; font-weight: 800; text-shadow: 0px 1px 2px rgba(0,0,0,0.3);
-      margin-left: 4px; margin-right: 10px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    
+    .item-badge { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; color: #fff; font-size: 13px; font-weight: 800; margin-left: 4px; margin-right: 10px; flex-shrink: 0; }
     .item-content { flex: 1; min-width: 0; }
     .item-title { font-size: 15px; font-weight: 700; color: #1c1c1e; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .item-subtitle { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .type-tag { font-size: 10px; color: #666; background: #f2f2f7; padding: 1px 6px; border-radius: 6px; font-weight: 700; }
+    .item-subtitle { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .type-tag { font-size: 11px; color: #555; background: #f2f2f7; padding: 2px 6px; border-radius: 6px; font-weight: 700; }
+    .hose-tag { font-size: 11px; color: #d93829; background: #feebe8; padding: 2px 6px; border-radius: 6px; font-weight: 700; }
     .dist-text { font-size: 13px; color: #8e8e93; font-weight: 600; }
     
-    .nav-button { 
-      background: #007aff; color: #fff; text-decoration: none; font-size: 12px; font-weight: 700; 
-      padding: 8px 14px; border-radius: 14px; flex-shrink: 0; margin-left: 8px;
-      box-shadow: 0 3px 10px rgba(0, 122, 255, 0.25); transition: all 0.2s;
+    .nav-button { background: #007aff; color: #fff; text-decoration: none; font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 14px; flex-shrink: 0; margin-left: 8px; box-shadow: 0 3px 10px rgba(0, 122, 255, 0.25); }
+
+    /* ⭐ 局端實景照片容器 (完整顯示不裁切 + 點擊全螢幕放大) */
+    .hydrant-photo-wrap {
+      margin: 0 16px 12px;
+      border-radius: 16px;
+      background: #111;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.1);
+      cursor: zoom-in;
+      min-height: 120px;
     }
-    .nav-button:active { transform: scale(0.92); box-shadow: 0 1px 4px rgba(0, 122, 255, 0.2); }
+    .hydrant-photo {
+      width: 100%;
+      height: auto;
+      max-height: 260px;
+      object-fit: contain; /* ⭐ 核心：完整保留全圖比例，徹底不裁切 */
+      display: block;
+      transition: transform 0.2s ease;
+    }
+    .hydrant-photo:active { transform: scale(0.98); }
+    .photo-tag {
+      position: absolute; bottom: 8px; right: 8px;
+      background: rgba(0,0,0,0.75); color: #fff;
+      font-size: 11px; padding: 3px 8px; border-radius: 8px; font-weight: 600;
+      backdrop-filter: blur(4px);
+    }
+    .photo-zoom-hint {
+      position: absolute; top: 8px; right: 8px;
+      background: rgba(0,0,0,0.65); color: #fff;
+      font-size: 11px; padding: 3px 8px; border-radius: 8px; font-weight: 600;
+      backdrop-filter: blur(4px);
+    }
 
-    /* ── 詳細資訊與搜尋結果面板專屬設定 ─────────────── */
-    #info-panel::-webkit-scrollbar { width: 4px; }
-    #info-panel::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 2px; }
+    /* ⭐ 照片全螢幕檢視彈窗 (Lightbox Modal) */
+    #photo-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999;
+      display: none; align-items: center; justify-content: center; padding: 16px;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    #photo-modal.show { display: flex; animation: fade-in 0.2s ease; }
+    #modal-img { max-width: 96vw; max-height: 88vh; object-fit: contain; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
+    #modal-close-btn {
+      position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); right: 20px;
+      background: rgba(255,255,255,0.2); color: #fff; border: none; width: 44px; height: 44px;
+      border-radius: 50%; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-    #info-body { padding: 0 16px; }
-    #info-body .row { display: flex; padding: 8px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.05); font-size: 13px; }
+    #info-panel { overflow-y: auto; }
+    #info-body { padding: 0 16px 20px; }
+    #info-body .row { display: flex; padding: 9px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.05); font-size: 13.5px; }
     #info-body .row:last-child { border-bottom: none; }
-    #info-body .lbl { color: #aaa; width: 90px; flex-shrink: 0; font-size: 12px; }
-    #info-body .val { color: #333; font-weight: 500; }
+    #info-body .lbl { color: #888; width: 95px; flex-shrink: 0; font-size: 12.5px; font-weight: 600; }
+    #info-body .val { color: #222; font-weight: 600; word-break: break-all; flex: 1; }
     
-    #info-nav, .panel-nav-group { display: flex; gap: 10px; padding: 10px 16px 20px; border-bottom: 1px solid rgba(0,0,0,0.06); }
-    .nav-btn, .btn-large { flex: 1; padding: 11px 10px; border-radius: 24px; text-align: center; font-size: 13px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity 0.2s, transform 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px;}
-    .nav-btn:hover, .btn-large:hover { opacity: 0.88; transform: translateY(-1px); }
-    .nav-btn:active, .btn-large:active { transform: translateY(0); }
-    .nav-btn-google, .btn-google { background: #4285f4; color: #fff; }
-    .nav-btn-apple, .btn-apple { background: #f0f0f0; color: #333; }
+    .panel-nav-group { display: flex; gap: 8px; padding: 8px 16px 14px; border-bottom: 1px solid rgba(0,0,0,0.06); flex-wrap: wrap; }
+    .nav-btn, .btn-large { flex: 1; min-width: 100px; padding: 10px 8px; border-radius: 18px; text-align: center; font-size: 12px; font-weight: 700; text-decoration: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;}
+    .btn-google { background: #4285f4; color: #fff; }
+    .btn-apple { background: #f0f0f0; color: #333; }
+    .btn-tccfd { background: linear-gradient(135deg, #ff9500, #ff5e3a); color: #fff; }
 
-    #search-panel-body { padding: 8px 24px 16px; font-size: 15px; color: #666; font-weight: 500; line-height: 1.5; }
+    #search-panel-body { padding: 8px 20px 16px; font-size: 14px; color: #666; font-weight: 500; line-height: 1.5; }
     #search-panel-footer { padding: 0 16px; }
-    .btn-primary-large { width: 100%; background: linear-gradient(135deg, #ff4b4b, #ff3b30); color: #fff; box-shadow: 0 6px 20px rgba(255, 59, 48, 0.3); }
+    .btn-primary-large { width: 100%; background: linear-gradient(135deg, #ff4b4b, #ff3b30); color: #fff; box-shadow: 0 6px 20px rgba(255, 59, 48, 0.3); border-radius: 22px; font-size: 15px; font-weight: 700; padding: 12px; }
 
-    /* ⭐ 垂直膠囊戰術工具列 (Pill Menu) */
     #primary-controls {
-      position: fixed; right: 16px; bottom: calc(24px + env(safe-area-inset-bottom)); 
-      display: flex; flex-direction: column; align-items: center;
-      background: rgba(255, 255, 255, 0.85); backdrop-filter: saturate(200%) blur(24px); 
-      -webkit-backdrop-filter: saturate(200%) blur(24px);
-      border-radius: 32px; padding: 6px; z-index: 700;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.12); border: 1px solid rgba(0, 0, 0, 0.05);
+      position: fixed; right: 16px; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); 
+      display: flex; flex-direction: column; align-items: center; background: rgba(255, 255, 255, 0.88); backdrop-filter: saturate(180%) blur(20px); 
+      border-radius: 32px; padding: 6px; z-index: 700; box-shadow: 0 6px 24px rgba(0,0,0,0.12); border: 1px solid rgba(0, 0, 0, 0.05);
     }
-    
-    .fab-btn {
-      background: transparent; border: none;
-      border-radius: 50%; width: 48px; height: 48px; cursor: pointer; color: #1c1c1e;
-      display: flex; align-items: center; justify-content: center; font-size: 22px;
-      transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-    .fab-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.05); }
-    
-    /* 工具列內部分隔線 */
-    .fab-divider { width: 32px; height: 1px; background: rgba(0,0,0,0.06); margin: 4px 0; }
-
+    .fab-btn { background: transparent; border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; color: #1c1c1e; display: flex; align-items: center; justify-content: center; font-size: 22px; }
     .fab-btn.primary { background: #007aff; color: #ffffff; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); margin-top: 2px; }
-    .fab-btn.primary:active { background: #0062cc; }
+    .fab-btn.active-fire { background: #ff3b30; color: #ffffff; box-shadow: 0 4px 12px rgba(255, 59, 48, 0.4); }
+    .fab-divider { width: 32px; height: 1px; background: rgba(0,0,0,0.08); margin: 4px 0; }
 
-    /* ⭐ 火點按鈕啟用狀態特效 (高亮警示) */
-    .fab-btn.active-fire {
-      background: #ff3b30; color: #ffffff;
-      box-shadow: 0 4px 12px rgba(255, 59, 48, 0.4);
-    }
-
-    /* 終極圖層收納選單 */
     #layer-menu {
-        position: fixed; right: 80px; 
-        bottom: calc(180px + env(safe-area-inset-bottom)); 
-        background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-        display: flex; flex-direction: column; padding: 12px; border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); border: 1px solid rgba(0,0,0,0.08);
-        z-index: 700; opacity: 0; pointer-events: none; transform: translateX(20px) scale(0.95);
-        transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-        transform-origin: bottom right;
+        position: fixed; right: 80px; bottom: calc(180px + env(safe-area-inset-bottom, 0px)); 
+        background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(24px); display: flex; flex-direction: column; padding: 12px; border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); border: 1px solid rgba(0,0,0,0.08); z-index: 700; opacity: 0; pointer-events: none; transform: translateX(20px) scale(0.95);
+        transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: bottom right;
     }
     #layer-menu.open { opacity: 1; pointer-events: auto; transform: translateX(0) scale(1); }
-    
-    .layer-row { 
-        display: flex; align-items: center; justify-content: space-between; gap: 24px; 
-        padding: 10px 4px; font-size: 15px; font-weight: 700; color: #1c1c1e; cursor: pointer;
-    }
-    .layer-row:active { opacity: 0.7; }
+    .layer-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 10px 6px; font-size: 14px; font-weight: 700; color: #1c1c1e; cursor: pointer; }
     .layer-divider { height: 1px; background: rgba(0,0,0,0.06); margin: 2px 0; }
-    
-    .toggle-switch { 
-        width: 44px; height: 24px; background: #e5e5ea; border-radius: 12px; 
-        position: relative; transition: 0.3s; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .toggle-switch::after { 
-        content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; 
-        background: white; border-radius: 50%; transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
-    }
+    .toggle-switch { width: 44px; height: 24px; background: #e5e5ea; border-radius: 12px; position: relative; transition: 0.3s; }
+    .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
     .toggle-switch.on { background: #34c759; }
     .toggle-switch.on::after { transform: translateX(20px); }
 
-    /* ⭐ 圖例膠囊 (完美防擠壓與置中對齊) ─────────────────────────────────── */
     #legend { 
-      position: fixed; 
-      bottom: calc(24px + env(safe-area-inset-bottom)); 
-      left: 16px; 
-      background: rgba(255, 255, 255, 0.85); backdrop-filter: saturate(200%) blur(24px); 
-      -webkit-backdrop-filter: saturate(200%) blur(24px);
-      border-radius: 20px; padding: 10px 14px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); 
-      z-index: 700; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 12px; 
-      border: 1px solid rgba(0, 0, 0, 0.05); transition: opacity 0.3s ease, transform 0.3s ease; 
-      flex-wrap: wrap; max-width: calc(100vw - 100px); color: #1c1c1e;
+      position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 16px; 
+      background: rgba(255, 255, 255, 0.88); backdrop-filter: saturate(180%) blur(20px); 
+      border-radius: 20px; padding: 9px 14px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); 
+      z-index: 700; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; 
+      border: 1px solid rgba(0, 0, 0, 0.05); flex-wrap: wrap; max-width: calc(100vw - 90px); color: #1c1c1e;
     }
     #legend.hidden { opacity: 0; pointer-events: none; transform: translateY(10px); }
+    .leg { display: flex; align-items: center; gap: 5px; white-space: nowrap; flex-shrink: 0; }
+    .leg-dot { display: flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.15); font-size: 9px; font-weight: 900; color: #fff; }
+    .leg-line { display: inline-block; width: 18px; height: 4px; border-radius: 2px; background: repeating-linear-gradient(to right, #e74c3c 0, #e74c3c 4px, transparent 4px, transparent 8px); }
+    .leg-circle { display: inline-block; width: 15px; height: 15px; border-radius: 50%; background: rgba(231,76,60,0.15); border: 2px dashed #e74c3c; }
 
-    .leg { display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; }
-    .leg-dot { 
-      display: flex; align-items: center; justify-content: center;
-      width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; 
-      box-shadow: 0 1px 4px rgba(0,0,0,0.15); flex-shrink: 0; 
-      font-size: 10px; font-weight: 900; color: #fff;
-    }
-    .leg-line { 
-      display: inline-block; width: 20px; height: 4px; border-radius: 2px;
-      background: repeating-linear-gradient(to right, #e74c3c 0, #e74c3c 4px, transparent 4px, transparent 8px); 
-      flex-shrink: 0; 
-    }
-    .leg-circle {
-      display: inline-block; width: 16px; height: 16px; border-radius: 50%;
-      background: rgba(231,76,60,0.15); border: 2px dashed #e74c3c; flex-shrink: 0;
-    }
-
-    .custom-div-icon { background: transparent; border: none; transition: opacity 0.3s ease; }
-    
-    .search-fire-marker { font-size: 28px; display: flex; align-items: center; justify-content: center; cursor: grab; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    .search-fire-marker:active { cursor: grabbing; transform: scale(1.1); }
+    .custom-div-icon { background: transparent; border: none; }
+    .search-fire-marker { font-size: 28px; display: flex; align-items: center; justify-content: center; cursor: grab; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     @keyframes bounce-in { 0% { transform: scale(0) translateY(20px); } 100% { transform: scale(1) translateY(0); } }
-    
     @keyframes fire-dot-pulse { 0% { transform: translate(-50%, 0) scale(1); opacity: 0.8; } 70% { transform: translate(-50%, 0) scale(3.5); opacity: 0; } 100% { transform: translate(-50%, 0) scale(3.5); opacity: 0; } }
     .fire-pulse { position: absolute; bottom: 0; left: 50%; transform: translate(-50%, 0); width: 14px; height: 14px; border-radius: 50%; background: rgba(255, 59, 48, 0.6); animation: fire-dot-pulse 1.5s ease-out infinite; z-index: 1; }
     .fire-pin { position: absolute; bottom: 0; left: 50%; transform: translate(-50%, 0); width: 12px; height: 12px; background: #ff3b30; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.4); z-index: 3; }
-    
     @keyframes user-dot-pulse { 0% { transform: scale(1); opacity: 0.6; } 70% { transform: scale(2.6); opacity: 0; } 100% { transform: scale(2.6); opacity: 0; } }
     .user-dot-pulse { width: 22px; height: 22px; border-radius: 50%; background: rgba(0, 122, 255, 0.5); animation: user-dot-pulse 2s ease-out infinite; }
-
     .flowing-line { animation: dash-flow 1s linear infinite; }
     @keyframes dash-flow { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
 
-    /* ⭐ AED 專屬 MarkerCluster 綠色群集樣式 */
-    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: rgba(0, 122, 255, 0.9); color: #fff; font-weight: 800; font-size: 14px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); }
-    .marker-cluster-small { background-color: rgba(0, 122, 255, 0.3); }
-    .marker-cluster-medium { background-color: rgba(0, 122, 255, 0.3); }
-    .marker-cluster-large { background-color: rgba(0, 122, 255, 0.3); }
-    
-    .marker-cluster-aed div { background-color: rgba(46, 204, 113, 0.9); color: #fff; font-weight: 800; font-size: 14px; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3); }
-    .marker-cluster-aed { background-color: rgba(46, 204, 113, 0.3); }
+    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background-color: rgba(0, 122, 255, 0.9); color: #fff; font-weight: 800; font-size: 13px; }
+    .marker-cluster-aed div { background-color: rgba(46, 204, 113, 0.9); color: #fff; font-weight: 800; font-size: 13px; }
 
-    /* ── 午夜暗黑模式 (Premium Dark Mode) ─────────────────────── */
+    /* 午夜暗黑模式 */
     body.dark-mode { background: #000; color: #f2f2f7; }
-    body.dark-mode .glass-panel { background: rgba(28, 28, 30, 0.85); border-color: rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); }
-    
+    body.dark-mode .glass-panel { background: rgba(28, 28, 30, 0.88); border-color: rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
     body.dark-mode #search-input { color: #fff; }
-    body.dark-mode #search-input::placeholder { color: #636366; }
-    
-    body.dark-mode #search-suggestions { background: rgba(28, 28, 30, 0.95); border-color: rgba(255, 255, 255, 0.1); }
-    body.dark-mode .suggestion-item { border-bottom-color: rgba(255, 255, 255, 0.06); }
-    body.dark-mode .suggestion-item:hover, body.dark-mode .suggestion-item:active { background: rgba(255, 255, 255, 0.08); }
+    body.dark-mode #search-suggestions { background: rgba(28, 28, 30, 0.96); border-color: rgba(255, 255, 255, 0.1); }
     body.dark-mode .suggestion-title { color: #f2f2f7; }
-    body.dark-mode .suggestion-subtitle { color: #a1a1a6; }
-    
-    body.dark-mode .card-label, body.dark-mode .panel-title, body.dark-mode .item-title, body.dark-mode #info-body .val { color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
-    body.dark-mode .panel-nav-group, body.dark-mode #info-body .row, body.dark-mode .panel-top { border-color: rgba(255, 255, 255, 0.06); }
-    
-    body.dark-mode .bottom-sheet { background: #1c1c1e; border-top: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5); }
-    
+    body.dark-mode .panel-title, body.dark-mode .item-title, body.dark-mode #info-body .val { color: #ffffff; }
+    body.dark-mode .bottom-sheet { background: #1c1c1e; border-top: 1px solid rgba(255, 255, 255, 0.12); }
     body.dark-mode #info-body .lbl { color: #8e8e93; }
-    body.dark-mode #info-body .val { color: #f2f2f7; }
-    body.dark-mode #search-panel-body { color: #e5e5ea; }
-    
-    body.dark-mode .nearby-item { background: #2c2c2e; border-color: rgba(255, 255, 255, 0.08); box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
-    body.dark-mode .nearby-item:hover, body.dark-mode .nearby-item:active { background: #3a3a3c; }
-    body.dark-mode .dist-text { color: #e5e5ea; font-weight: 600; }
+    body.dark-mode .nearby-item { background: #2c2c2e; border-color: rgba(255, 255, 255, 0.08); }
+    body.dark-mode .dist-text { color: #e5e5ea; }
     body.dark-mode .type-tag { color: #ffffff; background: rgba(255, 255, 255, 0.15); }
-    
-    body.dark-mode .sheet-drag-handle::before { background: rgba(255, 255, 255, 0.2); }
-    body.dark-mode .panel-close { background: rgba(255, 255, 255, 0.1); color: #fff; }
-    body.dark-mode .panel-close:hover { background: rgba(231, 76, 60, 0.2); color: #ff4b4b; }
-    
-    body.dark-mode .action-btn { background: rgba(255, 255, 255, 0.1); color: #fff; }
-    body.dark-mode .action-btn.copied { background: rgba(10, 132, 255, 0.2); color: #5e5ce6; }
-    body.dark-mode .line-btn { background: rgba(48, 209, 88, 0.15); color: #30d158; }
-    
-    body.dark-mode .btn-google { background: rgba(10, 132, 255, 0.15); color: #5ac8fa; box-shadow: none; }
-    body.dark-mode .btn-apple { background: #2c2c2e; color: #fff; box-shadow: none; }
-    
-    body.dark-mode #layer-menu { background: rgba(28, 28, 30, 0.95); border-color: rgba(255, 255, 255, 0.1); }
-    body.dark-mode .layer-row { color: #f2f2f7; }
-    body.dark-mode .layer-divider { background: rgba(255, 255, 255, 0.1); }
-    body.dark-mode .toggle-switch { background: #3a3a3c; }
-    
-    /* 膠囊工具列暗黑模式 */
-    body.dark-mode #primary-controls { background: rgba(28, 28, 30, 0.85); border-color: rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); }
-    body.dark-mode .fab-btn { color: #fff; }
-    body.dark-mode .fab-btn:active { background: rgba(255, 255, 255, 0.1); }
-    body.dark-mode .fab-divider { background: rgba(255, 255, 255, 0.1); }
-    body.dark-mode .fab-btn.primary { background: #0a84ff; color: #fff; border: none; box-shadow: 0 4px 12px rgba(10, 132, 255, 0.4); }
-    body.dark-mode .fab-btn.active-fire { background: #ff453a; color: #fff; box-shadow: 0 4px 12px rgba(255, 69, 58, 0.4); }
+    body.dark-mode .btn-apple { background: #2c2c2e; color: #fff; }
+    body.dark-mode #layer-menu { background: rgba(28, 28, 30, 0.96); }
+    body.dark-mode #primary-controls { background: rgba(28, 28, 30, 0.88); }
+    body.dark-mode #legend { background: rgba(28, 28, 30, 0.88); color: #f2f2f7; }
 
-    body.dark-mode #legend { background: rgba(28, 28, 30, 0.85); color: #f2f2f7; border-color: rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); }
-    body.dark-mode #north-arrow { background: rgba(28, 28, 30, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); }
-    body.dark-mode .leaflet-control-scale-line { background: rgba(28,28,30,0.85); border-color: #f2f2f7; color: #f2f2f7; }
-
-    /* ⭐ RWD 平板/桌機側邊欄模式 (Tablet UI) */
-    @media (min-width: 769px) {
-      /* 搜尋列與選單統一寬度 340px，固定在左上角 */
+    @media (min-width: 900px) and (min-height: 520px) {
       #search-card { left: 24px; top: 24px; bottom: auto; width: 400px; max-width: none; transform: none; }
-      #search-suggestions { left: 24px; top: 88px; bottom: auto; width: 400px; transform: none; flex-direction: column; }
-      
-      /* ⭐ 側邊欄往下推，讓出頂部空間給搜尋列 */
-      .bottom-sheet {
-        top: 104px; /* 24(頂距) + 56(搜尋列高) + 24(間距) */
-        bottom: 24px; left: 24px; width: 340px; right: auto; border-radius: 24px;
-        transform: translateX(-120%); 
-        max-height: calc(100dvh - 128px); /* 100vh - 104(上) - 24(下) */
-        border-bottom: none;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid rgba(0, 0, 0, 0.08);
-      }
-      body.dark-mode .bottom-sheet { border-color: rgba(255, 255, 255, 0.1); border-top: 1px solid rgba(255, 255, 255, 0.1); }
-      .bottom-sheet.open { transform: translateX(0); }
-      
+      #search-suggestions { left: 24px; top: 86px; bottom: auto; width: 400px; transform: none; }
+      .bottom-sheet { top: 96px; bottom: 24px; left: 24px; width: 380px; right: auto; border-radius: 24px; transform: translateX(calc(-100% - 50px)); max-height: calc(100dvh - 120px); }
+      .bottom-sheet.open { transform: translateX(0); opacity: 1; visibility: visible; pointer-events: auto; }
       .sheet-drag-handle { display: none; } 
-      .panel-top { padding-top: 16px; }
-      
-      /* 圖例移到左側清單旁，避開側邊欄 */
-      #legend { left: 388px; bottom: 24px; top: auto; right: auto; }
-      #primary-controls { right: 24px; bottom: 24px; top: auto; }
-      #layer-menu { right: 94px; bottom: 234px; }
+      #legend { left: 420px; bottom: 24px; }
+      #primary-controls { right: 24px; bottom: 24px; }
+      #layer-menu { right: 90px; bottom: 230px; }
       #north-arrow { top: 24px; right: 24px; }
     }
   </style>
@@ -430,46 +284,56 @@
 
 <div id="loading">
   <div class="spinner"></div>
-  <div id="loading-msg">讀取資料中…</div>
+  <div id="loading-msg">讀取水源資料中…</div>
 </div>
 
 <div id="map"></div>
 
-<!-- 指北針歸位按鈕 (右上角) -->
+<!-- 指北針 -->
 <div id="north-arrow" class="glass-panel" onclick="vibe(); map.setView(MAP_CENTER, MAP_ZOOM);" title="重置視角與指北">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff3b30">
     <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
   </svg>
 </div>
 
-<!-- 懸浮膠囊搜尋列 (移回正上方) -->
+<!-- 懸浮搜尋列 -->
 <div id="search-card" class="glass-panel">
   <div class="search-icon-wrap">🚒</div>
-  <input id="search-input" type="text" placeholder="輸入地址，或長按地圖定火點" autocomplete="off">
+  <input id="search-input" type="text" placeholder="輸入地址、路名或消防栓編號" autocomplete="off">
   <button id="btn-clear-search" onclick="vibe(); clearSearch();" style="display: none;">✕</button>
   <button id="search-btn" onclick="vibe(); doSearch();">🔍</button>
 </div>
 
-<!-- 自動補全下拉選單 -->
 <div id="search-suggestions"></div>
-
 <div id="status"></div>
 
-<!-- 統一規格：附近消防栓清單 (無篩選器) -->
+<!-- 附近消防栓清單抽屜 -->
 <div id="nearby-panel" class="bottom-sheet glass-panel">
   <div class="sheet-drag-handle" id="nearby-drag"></div>
-  <div class="panel-top">
-    <div class="panel-title" id="nearby-title">附近 5 支</div>
-    <div style="display: flex; gap: 8px;">
-        <button class="action-btn" id="btn-copy-nearby" onclick="vibe(); copyNearbyInfo()">📋 複製</button>
-        <a class="action-btn line-btn" id="btn-share-line" href="#" target="_blank" style="display: none;">💬 LINE</a>
-        <button class="panel-close" onclick="vibe(); closeNearby()">✕</button>
+  <div class="panel-top" style="flex-direction: column; align-items: stretch; gap: 12px; padding-bottom: 12px;">
+    <!-- 第一列：標題與關閉按鈕 -->
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div class="panel-title" id="nearby-title" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 10px;">附近水源</div>
+      <button class="panel-close" onclick="vibe(); closeNearby()" style="margin-left: 12px;">✕</button>
+    </div>
+    
+    <!-- 第二列：數量選擇與操作按鈕 -->
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <div class="count-selector" id="count-selector" style="margin-left: 0;">
+        <button class="count-btn" onclick="vibe(); changeNearbyCount(3)">3</button>
+        <button class="count-btn active" onclick="vibe(); changeNearbyCount(5)">5</button>
+        <button class="count-btn" onclick="vibe(); changeNearbyCount(10)">10</button>
+      </div>
+      
+      <!-- 利用 margin-left: auto 將複製與 LINE 按鈕推至畫面最右側 -->
+      <button class="action-btn" id="btn-copy-nearby" onclick="vibe(); copyNearbyInfo()" style="margin-left: auto;">📋 複製</button>
+      <a class="action-btn line-btn" id="btn-share-line" href="#" target="_blank" style="display: none;">💬 LINE</a>
     </div>
   </div>
   <div id="nearby-list"></div>
 </div>
 
-<!-- 底部抽屜：搜尋地點資訊 -->
+<!-- 搜尋地點資訊抽屜 -->
 <div id="search-panel" class="bottom-sheet glass-panel">
   <div class="sheet-drag-handle" id="search-panel-drag"></div>
   <div class="panel-top">
@@ -477,32 +341,48 @@
     <button class="panel-close" onclick="vibe(); closeSearchPanel()">✕</button>
   </div>
   <div class="panel-nav-group" id="search-panel-nav">
-    <a id="sp-nav-google" class="btn-large btn-google" href="#" target="_blank" onclick="vibe()">Google Maps</a>
+    <a id="sp-nav-google" class="btn-large btn-google" href="#" target="_blank" onclick="vibe()">Google 導航</a>
     <a id="sp-nav-apple" class="btn-large btn-apple" href="#" target="_blank" onclick="vibe()">Apple Maps</a>
+    <a id="sp-nav-tccfd" class="btn-large btn-tccfd" href="#" target="_blank" onclick="vibe()">🚒 局端查察圖</a>
   </div>
   <div id="search-panel-body"></div>
   <div id="search-panel-footer">
-    <button class="btn-large btn-primary-large nearby-trigger-btn" onclick="vibe(); closeSearchPanel(); showNearby(searchInfo.lat, searchInfo.lng, '火點');">
-      🚒 查看附近水源
+    <button class="btn-large btn-primary-large" onclick="vibe(); closeSearchPanel(); showNearby(searchInfo.lat, searchInfo.lng, '火點');">
+      🚒 查看附近水源與水帶佈線
     </button>
   </div>
 </div>
 
-<!-- 底部抽屜：消防栓/AED詳細資訊 -->
+<!-- 消防栓/AED詳細資訊抽屜 (完整無裁切實景照片版) -->
 <div id="info-panel" class="bottom-sheet glass-panel">
   <div class="sheet-drag-handle" id="info-drag"></div>
   <div class="panel-top">
     <div class="panel-title" id="info-title"></div>
     <button class="panel-close" onclick="vibe(); closeInfo()">✕</button>
   </div>
+  
+  <!-- ⭐ 官方現場實景照片區 (完整比例呈現 + 點擊放大) -->
+  <div id="hydrant-photo-container" class="hydrant-photo-wrap" style="display: none;" onclick="vibe(); openPhotoModal();">
+    <img id="hydrant-photo-img" class="hydrant-photo" src="" alt="局端現場實景照片" onerror="document.getElementById('hydrant-photo-container').style.display='none';">
+    <div class="photo-zoom-hint">🔍 點擊放大</div>
+    <div class="photo-tag">📷 局端現場照片</div>
+  </div>
+
   <div class="panel-nav-group" id="info-nav">
-    <a id="info-nav-google" class="nav-btn nav-btn-google" href="#" target="_blank" onclick="vibe()">Google Maps</a>
-    <a id="info-nav-apple" class="nav-btn nav-btn-apple" href="#" target="_blank" onclick="vibe()">Apple Maps</a>
+    <a id="info-nav-google" class="nav-btn btn-google" href="#" target="_blank" onclick="vibe()">Google 導航</a>
+    <a id="info-nav-apple" class="nav-btn btn-apple" href="#" target="_blank" onclick="vibe()">Apple Maps</a>
+    <a id="info-nav-tccfd" class="nav-btn btn-tccfd" href="#" target="_blank" onclick="vibe()">🚒 局端查察圖</a>
   </div>
   <div id="info-body"></div>
 </div>
 
-<!-- 終極圖層收納選單 -->
+<!-- ⭐ 照片全螢幕放大檢視彈窗 -->
+<div id="photo-modal" onclick="closePhotoModal()">
+  <button id="modal-close-btn" onclick="closePhotoModal()">✕</button>
+  <img id="modal-img" src="" alt="全螢幕照片">
+</div>
+
+<!-- 圖層選單 -->
 <div id="layer-menu">
     <div class="layer-row" onclick="vibe(); toggleAED()">
         <span>💖 顯示 AED</span>
@@ -525,15 +405,10 @@
     </div>
 </div>
 
-<!-- ⭐ 垂直膠囊戰術工具列 (Pill Menu) -->
+<!-- 垂直工具列 -->
 <div id="primary-controls">
   <button class="fab-btn" id="btn-layers" onclick="vibe(); toggleLayerMenu(event)" title="圖層設定">📚</button>
   <div class="fab-divider"></div>
-  
-  <!-- 新增：開啟消防局圖資 (動態判斷縣市) -->
-  <button class="fab-btn" id="btn-gis" onclick="openGISMap()" title="開啟消防局圖資">🗺️</button>
-  <div class="fab-divider"></div>
-  
   <button class="fab-btn" id="btn-fire" onclick="vibe(); toggleFireMarker()" title="標定/解除火點">🔥</button>
   <div class="fab-divider"></div>
   <button class="fab-btn" id="btn-nearby-toggle" onclick="vibe(); toggleNearbyPanel()" title="附近清單">
@@ -543,13 +418,13 @@
   <button class="fab-btn primary" id="btn-locate" onclick="vibe(); locateMe()" title="定位目前位置">📍</button>
 </div>
 
-<!-- 圖例 (移回左下角，加入防擠壓結構) -->
+<!-- 圖例 -->
 <div id="legend" class="glass-panel">
   <div class="leg"><span class="leg-dot" style="background:#e74c3c;"></span>地上式</div>
   <div class="leg"><span class="leg-dot" style="background:#f39c12;"></span>地下式</div>
   <div class="leg"><span class="leg-dot" style="background:#2ecc71;">A</span>AED</div>
   <div class="leg"><span class="leg-circle"></span>100m</div>
-  <div class="leg"><span class="leg-line"></span>水帶佈線</div>
+  <div class="leg"><span class="leg-line"></span>水帶連線</div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -558,9 +433,10 @@
 // ═══════════════════════════════════════════════
 //  核心設定與狀態變數
 // ═══════════════════════════════════════════════
-const MAP_CENTER = [24.1493, 120.7058]; 
-const MAP_ZOOM = 14;
+const MAP_CENTER = [24.1493, 120.7058]; // 中山分隊預設坐標
+const MAP_ZOOM = 15;
 const HOSE_RADIUS = 100; 
+const HOSE_LENGTH = 20;  
 let nearbyCount = 5; 
 
 let mapMode = localStorage.getItem('tacticalMapMode') || 'light'; 
@@ -571,15 +447,12 @@ let nearbyPanelVisible = false;
 
 let allPoints = [];
 let nearbyItems = [];
-let searchMarker = null;
-let searchCircle = null; 
-let searchInfo = null;
-
+let searchMarker = null, searchCircle = null, searchInfo = null;
 let userDot = null, watchId = null, userLatLng = null, userHalo = null; 
+let smoothHeading = 0;
+let currentPhotoUrl = '';
 
-let currentNearbyLat = null;
-let currentNearbyLng = null;
-let currentNearbyName = null;
+let currentNearbyLat = null, currentNearbyLng = null, currentNearbyName = null;
 
 const TAIWAN_BOUNDS = L.latLngBounds(L.latLng(21.5, 119.5), L.latLng(25.5, 122.5));
 const map = L.map('map', { 
@@ -591,63 +464,43 @@ const map = L.map('map', {
   maxBoundsViscosity: 0.8,
   minZoom: 8
 });
-L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-// 即時動態比例尺
+L.control.zoom({ position: 'bottomright' }).addTo(map);
 L.control.scale({ position: 'bottomleft', imperial: false, metric: true }).addTo(map);
 
 const layerLight = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_25x4_1_dba3c60e71a1bf4a15dd3069';
 const layerDark = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_25x4_1_dba3c60e71a1bf4a15dd3069';
 const layerSat = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'; 
 
-let currentTileLayer = L.tileLayer(layerLight, { attribution: '© OpenStreetMap contributors', subdomains: 'abcd', maxZoom: 20 }).addTo(map);
+let currentTileLayer = L.tileLayer(layerLight, { 
+  attribution: '© OpenStreetMap contributors', subdomains: 'abcd', maxZoom: 20 
+}).addTo(map);
 
-// 拖曳地圖時收起鍵盤與自動補全選單，維持畫面穩定
 map.on('dragstart', () => {
     document.getElementById('search-suggestions').style.display = 'none';
     document.getElementById('search-input').blur();
 });
-
-let isMapMoving = false;
-map.on('movestart', () => {
-    isMapMoving = true;
-    document.getElementById('layer-menu').classList.remove('open'); 
-});
-map.on('moveend', () => {
-    isMapMoving = false;
-});
-
-// 點擊地圖時自動收起圖層選單
-map.on('click', () => {
-    document.getElementById('layer-menu').classList.remove('open');
-});
+map.on('click', () => { document.getElementById('layer-menu').classList.remove('open'); });
 
 function updateTileLayer() {
-  if (mapMode === 'satellite') {
-    currentTileLayer.setUrl(layerSat);
-  } else {
-    currentTileLayer.setUrl(mapMode === 'dark' ? layerDark : layerLight);
-  }
+  if (mapMode === 'satellite') currentTileLayer.setUrl(layerSat);
+  else currentTileLayer.setUrl(mapMode === 'dark' ? layerDark : layerLight);
 }
 
-function vibe() {
-  try { if (navigator.vibrate) navigator.vibrate(40); } catch(e) {}
-}
+function vibe() { try { if (navigator.vibrate) navigator.vibrate(35); } catch(e) {} }
+
+function isDesktopView() { return window.matchMedia('(min-width: 900px) and (min-height: 520px)').matches; }
 
 function focusMap(latlng, zoomLevel = null, offsetRatio = 0) {
     map.invalidateSize(); 
-
     const targetZoom = zoomLevel || map.getZoom();
-    
-    if (offsetRatio === 0 || window.innerWidth >= 769) {
+    if (offsetRatio === 0 || isDesktopView()) {
         map.setView(latlng, targetZoom, { animate: true, duration: 0.35 });
         return;
     }
-
-    let targetPoint = map.project(latlng, targetZoom);
+    const targetPoint = map.project(latlng, targetZoom);
     targetPoint.y += Math.round(window.innerHeight * offsetRatio);
-    let newCenter = map.unproject(targetPoint, targetZoom);
-    
+    const newCenter = map.unproject(targetPoint, targetZoom);
     map.setView(newCenter, targetZoom, { animate: true, duration: 0.35 });
 }
 
@@ -656,30 +509,15 @@ function checkPanelsAndLegend() {
     const searchOpen = document.getElementById('search-panel').classList.contains('open');
     const nearbyOpen = document.getElementById('nearby-panel').classList.contains('open');
     const legend = document.getElementById('legend');
-
-    if (window.innerWidth >= 769) {
-        legend.classList.remove('hidden');
-        return;
-    }
-    
-    if (nearbyOpen || infoOpen || searchOpen) {
-        legend.classList.add('hidden');
-    } else {
-        legend.classList.remove('hidden');
-    }
+    if (isDesktopView()) { legend.classList.remove('hidden'); return; }
+    if (nearbyOpen || infoOpen || searchOpen) legend.classList.add('hidden');
+    else legend.classList.remove('hidden');
 }
 
-const layerGroup = L.markerClusterGroup({ maxClusterRadius: 50, spiderfyOnMaxZoom: true, showCoverageOnHover: false, disableClusteringAtZoom: 18, chunkedLoading: true }).addTo(map);
-
+const layerGroup = L.markerClusterGroup({ maxClusterRadius: 45, spiderfyOnMaxZoom: true, showCoverageOnHover: false, disableClusteringAtZoom: 17, chunkedLoading: true }).addTo(map);
 const aedLayerGroup = L.markerClusterGroup({ 
-  maxClusterRadius: 50, spiderfyOnMaxZoom: true, showCoverageOnHover: false, disableClusteringAtZoom: 16, chunkedLoading: true,
-  iconCreateFunction: function (cluster) {
-    return new L.DivIcon({ 
-      html: '<div><span>' + cluster.getChildCount() + '</span></div>', 
-      className: 'marker-cluster marker-cluster-aed', 
-      iconSize: new L.Point(40, 40) 
-    });
-  }
+  maxClusterRadius: 45, spiderfyOnMaxZoom: true, showCoverageOnHover: false, disableClusteringAtZoom: 16, chunkedLoading: true,
+  iconCreateFunction: c => new L.DivIcon({ html: `<div><span>${c.getChildCount()}</span></div>`, className: 'marker-cluster marker-cluster-aed', iconSize: new L.Point(38, 38) })
 });
 
 const highlightLayer = L.layerGroup().addTo(map);
@@ -687,14 +525,9 @@ const hoseLinesLayer = L.layerGroup().addTo(map);
 
 if (mapMode === 'dark' || mapMode === 'satellite') document.body.classList.add('dark-mode');
 
-// ⭐ 安全的圖層選單開關邏輯
 function toggleLayerMenu(e) {
-    if (e) {
-        e.stopPropagation();
-        e.preventDefault();
-    }
-    const menu = document.getElementById('layer-menu');
-    menu.classList.toggle('open');
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    document.getElementById('layer-menu').classList.toggle('open');
     updateLayerSwitches();
 }
 
@@ -705,35 +538,16 @@ function updateLayerSwitches() {
     document.getElementById('switch-theme').classList.toggle('on', mapMode === 'dark' || mapMode === 'satellite');
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  updateTileLayer();
-  if (hoseLinesVisible) { map.addLayer(hoseLinesLayer); } else { map.removeLayer(hoseLinesLayer); }
-  if (layerVisible) { map.addLayer(layerGroup); } else { map.removeLayer(layerGroup); }
-  if (aedVisible) { map.addLayer(aedLayerGroup); } else { map.removeLayer(aedLayerGroup); }
-  updateLayerSwitches();
-  
-  // 防鬼觸控保護
-  const uiElements = ['search-card', 'search-suggestions', 'north-arrow', 'primary-controls', 'layer-menu', 'legend', 'nearby-panel', 'search-panel', 'info-panel'];
-  uiElements.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-          L.DomEvent.disableClickPropagation(el);
-      }
-  });
-});
-
 function parseCSV(text) {
-  const rows = [];
-  let currentRow = [], currentCell = '', insideQuotes = false;
+  const rows = []; let currentRow = [], currentCell = '', insideQuotes = false;
   for (let i = 0; i < text.length; i++) {
     const char = text[i], nextChar = text[i + 1];
     if (char === '"' && insideQuotes && nextChar === '"') { currentCell += '"'; i++; } 
     else if (char === '"') { insideQuotes = !insideQuotes; } 
     else if (char === ',' && !insideQuotes) { currentRow.push(currentCell); currentCell = ''; } 
-    else if (char === '\n' || char === '\r') {
+    else if ((char === '\n' || char === '\r') && !insideQuotes) {
       if (char === '\r' && nextChar === '\n') i++;
-      currentRow.push(currentCell); rows.push(currentRow);
-      currentRow = []; currentCell = ''; insideQuotes = false; 
+      currentRow.push(currentCell); rows.push(currentRow); currentRow = []; currentCell = ''; insideQuotes = false; 
     } else { currentCell += char; }
   }
   if (currentRow.length > 0 || currentCell !== '') { currentRow.push(currentCell); rows.push(currentRow); }
@@ -741,103 +555,114 @@ function parseCSV(text) {
 }
 
 function typeToIcon(type, highlight = false, number = null) {
-  let size = highlight ? 32 : 14;
-  let border = highlight ? '3px solid #fff' : '2px solid #fff';
-  let bg = type === 'below' ? '#f39c12' : '#e74c3c';
-  
-  let innerHtml = '';
-  if (highlight && number !== null) {
-    innerHtml = `<span style="color:#fff; font-size:15px; font-weight:800; text-shadow:0px 1px 3px rgba(0,0,0,0.4);">${number}</span>`;
-  }
-  return L.divIcon({ className: 'custom-div-icon', html: `<div style="background-color:${bg};width:${size}px;height:${size}px;border-radius:50%;border:${border};box-shadow:0 3px 10px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;">${innerHtml}</div>`, iconSize: [size, size], iconAnchor: [size/2, size/2] });
+  const size = highlight ? 32 : 14, border = highlight ? '3px solid #fff' : '2px solid #fff';
+  const bg = type === 'below' ? '#f39c12' : '#e74c3c';
+  let innerHtml = (highlight && number !== null) ? `<span style="color:#fff; font-size:14px; font-weight:800; text-shadow:0px 1px 3px rgba(0,0,0,0.5);">${number}</span>` : '';
+  return L.divIcon({ 
+    className: 'custom-div-icon', 
+    html: `<div style="background-color:${bg};width:${size}px;height:${size}px;border-radius:50%;border:${border};box-shadow:0 3px 10px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">${innerHtml}</div>`, 
+    iconSize: [size, size], iconAnchor: [size/2, size/2] 
+  });
 }
 
 function getHydrantType(props) {
-  const combined = ((props['消防栓位置'] || '') + (props['種類'] || '')).toLowerCase();
+  const combined = ((props['消防栓位置'] || '') + (props['種類'] || '') + (props['形式'] || '')).toLowerCase();
   return combined.includes('地下') ? 'below' : 'above';
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const hydrantFiles = [
-      '臺中市消防栓水源位置資料.csv',
-      '高雄市政府消防局地上式消防栓.csv',
-      '高雄市政府消防局地下式消防栓.csv'
-    ];
-    
-    for (const file of hydrantFiles) {
-      try {
-        const response = await fetch(file);
-        if (!response.ok) {
-            console.warn(`找不到 ${file}`);
-            continue;
-        }
-        const csvText = await response.text();
-        const rows = parseCSV(csvText.trim());
-        
-        if (rows.length >= 2) {
-          const headers = rows[0].map(h => h.replace(/^\uFEFF/, '').replace(/^"/, '').replace(/"$/, '').trim());
-          const latIdx = headers.indexOf('緯度'); 
-          const lngIdx = headers.indexOf('經度');
-          
-          if (latIdx === -1 || lngIdx === -1) {
-              console.warn(`${file} 缺少經緯度欄位`);
-              continue;
-          }
+  updateTileLayer();
+  if (hoseLinesVisible) map.addLayer(hoseLinesLayer); else map.removeLayer(hoseLinesLayer);
+  if (layerVisible) map.addLayer(layerGroup); else map.removeLayer(layerGroup);
+  if (aedVisible) map.addLayer(aedLayerGroup); else map.removeLayer(aedLayerGroup);
+  updateLayerSwitches();
+  
+  const uiElements = ['search-card', 'search-suggestions', 'north-arrow', 'primary-controls', 'layer-menu', 'legend', 'nearby-panel', 'search-panel', 'info-panel'];
+  uiElements.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) L.DomEvent.disableClickPropagation(el);
+  });
 
-          for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
-            if (row.length < headers.length) continue;
-            const lat = parseFloat(row[latIdx]), lng = parseFloat(row[lngIdx]);
-            if (isNaN(lat) || isNaN(lng)) continue;
-            
-            const props = {}; headers.forEach((h, j) => props[h] = row[j] ? row[j].trim() : '');
-            props['name'] = props['消防栓位置'] || props['消防栓編號'] || '消防栓';
-            const type = getHydrantType(props); const latlng = L.latLng(lat, lng);
-            
-            const marker = L.marker(latlng, { icon: typeToIcon(type, false, null) });
-            marker.on('click', e => { 
-                vibe(); 
-                L.DomEvent.stopPropagation(e); 
-                showInfo(props, latlng); 
-                focusMap(latlng, null, 0.22);
-            });
-            
-            marker.addTo(layerGroup);
-            allPoints.push({ properties: props, latlng, marker, type });
-          }
-        }
-      } catch (err) {
-        console.error(`讀取 ${file} 失敗:`, err);
+  await loadHydrantData();
+  await loadAEDs();
+});
+
+async function loadHydrantData() {
+  try {
+    const response = await fetch('臺中市消防栓水源位置資料.csv');
+    if (!response.ok) throw new Error('找不到 CSV 檔案');
+    const csvText = await response.text();
+    const rows = parseCSV(csvText.trim());
+    
+    if (rows.length >= 2) {
+      const headers = rows[0].map(h => h.replace(/^﻿/, '').replace(/^"/, '').replace(/"$/, '').trim());
+      const latIdx = headers.indexOf('緯度'), lngIdx = headers.indexOf('經度');
+      
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (row.length < headers.length) continue;
+        const lat = parseFloat(row[latIdx]), lng = parseFloat(row[lngIdx]);
+        if (isNaN(lat) || isNaN(lng)) continue;
+        
+        const props = {}; headers.forEach((h, j) => props[h] = row[j] ? row[j].trim() : '');
+        props['name'] = props['消防栓位置'] || props['消防栓編號'] || props['設置地址'] || '消防栓';
+        const type = getHydrantType(props); 
+        const latlng = L.latLng(lat, lng);
+        
+        const marker = L.marker(latlng, { icon: typeToIcon(type, false, null) });
+        marker.on('click', e => { 
+            vibe(); L.DomEvent.stopPropagation(e); 
+            showInfo(props, latlng); 
+            focusMap(latlng, null, 0.22);
+        });
+        
+        marker.addTo(layerGroup);
+        allPoints.push({ properties: props, latlng, marker, type });
       }
     }
-    
     document.getElementById('loading').style.display = 'none';
     showStatus(`成功載入 ${allPoints.length} 支消防栓`, 3000);
   } catch (err) {
-    console.error(err); 
-    document.getElementById('loading-msg').innerHTML = '⚠️ 消防栓資料讀取失敗';
+    console.warn('切換展示資料模式:', err);
+    initFallbackData();
+    document.getElementById('loading').style.display = 'none';
+    showStatus('已啟用展示模式 (點擊可查看現場照片)', 3500);
   }
+}
 
-  loadAEDs();
-});
+function initFallbackData() {
+  const samples = [
+    { '消防栓編號': '18534', name: '新福里新福路66巷36弄60號旁', '設置地址': '臺中市太平區新福里新福路66巷36弄60號旁', lat: 24.14961026, lng: 120.70389444, type: 'below', 種類: '地下', 型式: '五角開關', 標誌: '無', 管徑: '100mm', 轄區: '中山分隊' },
+    { '消防栓編號': '18536', name: '新福路66巷36弄31號側邊', '設置地址': '臺中市太平區新福路66巷36弄31號側邊（機車格）', lat: 24.1495203, lng: 120.70445859, type: 'below', 種類: '地下', 型式: '五角開關', 標誌: '無', 管徑: '100mm', 轄區: '中山分隊' },
+    { '消防栓編號': '5627',  name: '新福里振福路和振福路126巷口', '設置地址': '臺中市太平區新福里振福路和振福路126巷口', lat: 24.14756616, lng: 120.70452332, type: 'below', 種類: '地下', 型式: '五角開關', 標誌: '無', 管徑: '150mm', 轄區: '中山分隊' },
+    { '消防栓編號': '13744', name: '東英十七街1號（與東英路口）', '設置地址': '臺中市東區東英十七街1號（與東英路口）', lat: 24.14792595, lng: 120.70641696, type: 'above', 種類: '地上', 型式: '五角開關', 標誌: '無', 管徑: '100mm', 轄區: '中山分隊' },
+    { '消防栓編號': '5624',  name: '新福里振福路195號前', '設置地址': '臺中市太平區新福里振福路195號前', lat: 24.14932475, lng: 120.7058443, type: 'below', 種類: '地下', 型式: '五角開關', 標誌: '無', 管徑: '150mm', 轄區: '中山分隊' }
+  ];
+
+  samples.forEach(s => {
+    const latlng = L.latLng(s.lat, s.lng);
+    const marker = L.marker(latlng, { icon: typeToIcon(s.type, false, null) });
+    marker.on('click', e => {
+      vibe(); L.DomEvent.stopPropagation(e);
+      showInfo(s, latlng); focusMap(latlng, null, 0.22);
+    });
+    marker.addTo(layerGroup);
+    allPoints.push({ properties: s, latlng, marker, type: s.type });
+  });
+}
 
 async function loadAEDs() {
   try {
     const response = await fetch('AED位置資訊.csv');
     if (!response.ok) return; 
-    
     const csvText = await response.text();
     const rows = parseCSV(csvText.trim());
     if (rows.length < 2) return;
     
-    const headers = rows[0].map(h => h.replace(/^\uFEFF/, '').replace(/^"/, '').replace(/"$/, '').trim());
-    const latIdx = headers.indexOf('地點LAT'); 
-    const lngIdx = headers.indexOf('地點LNG');
-    
+    const headers = rows[0].map(h => h.replace(/^﻿/, '').replace(/^"/, '').replace(/"$/, '').trim());
+    const latIdx = headers.indexOf('地點LAT'), lngIdx = headers.indexOf('地點LNG');
     if (latIdx === -1 || lngIdx === -1) return;
     
-    let aedCount = 0;
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
       if (row.length < headers.length) continue;
@@ -851,149 +676,143 @@ async function loadAEDs() {
       const icon = L.divIcon({ 
         className: 'custom-div-icon', 
         html: `<div style="background-color:#2ecc71;width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:900;">A</div>`, 
-        iconSize: [18, 18], 
-        iconAnchor: [9, 9] 
+        iconSize: [18, 18], iconAnchor: [9, 9] 
       });
       
       const marker = L.marker(latlng, { icon: icon });
       marker.on('click', e => { 
-          vibe(); 
-          L.DomEvent.stopPropagation(e); 
-          showInfo(props, latlng, true); 
-          focusMap(latlng, null, 0.22);
+          vibe(); L.DomEvent.stopPropagation(e); 
+          showInfo(props, latlng, true); focusMap(latlng, null, 0.22);
       });
-      
       marker.addTo(aedLayerGroup);
-      aedCount++;
     }
-    
-    if (aedVisible) {
-      map.addLayer(aedLayerGroup);
-    }
-    console.log(`成功載入 ${aedCount} 組 AED 資訊`);
-  } catch (err) {
-    console.error("AED 讀取錯誤:", err); 
-  }
+    if (aedVisible) map.addLayer(aedLayerGroup);
+  } catch (err) {}
 }
 
 function toggleAED() {
   aedVisible = !aedVisible;
-  const btn = document.getElementById('switch-aed');
-  if (aedVisible) {
-    map.addLayer(aedLayerGroup);
-  } else {
-    map.removeLayer(aedLayerGroup);
-  }
+  if (aedVisible) map.addLayer(aedLayerGroup); else map.removeLayer(aedLayerGroup);
   localStorage.setItem('tacticalAedVisible', aedVisible);
   updateLayerSwitches();
   showStatus(aedVisible ? '開啟 AED 顯示' : '隱藏 AED 顯示', 2000);
 }
 
-// ⭐ 火點按鈕「標定/關閉」切換邏輯 (優先使用GPS定位)
 function toggleFireMarker() {
   vibe();
   if (searchMarker) {
-      // 關閉火點
       clearSearch();
   } else {
-      // 開啟火點
-      closeInfo();
-      closeSearchPanel();
-      
+      closeInfo(); closeSearchPanel();
       let targetLat, targetLng, targetName;
       if (userLatLng) {
-          targetLat = userLatLng.lat;
-          targetLng = userLatLng.lng;
-          targetName = "目前定位火警點";
+          targetLat = userLatLng.lat; targetLng = userLatLng.lng; targetName = "目前定位火警點";
       } else {
           const center = map.getCenter();
-          targetLat = center.lat;
-          targetLng = center.lng;
-          targetName = "自訂火點";
-          showStatus('無GPS訊號，以畫面中心標定', 2000);
+          targetLat = center.lat; targetLng = center.lng; targetName = "自訂火點";
+          showStatus('無 GPS 訊號，以地圖中心標定火點', 2000);
       }
-      
       createFireMarker(targetLat, targetLng, targetName);
       showNearby(targetLat, targetLng, "火點");
       focusMap([targetLat, targetLng], null, 0.22);
-      if(userLatLng) showStatus('已於目前位置標定火點 (長按可拖曳)', 3000);
   }
 }
 
 function createFireMarker(lat, lng, nameText) {
   if (searchMarker) map.removeLayer(searchMarker);
   if (searchCircle) map.removeLayer(searchCircle);
-  searchInfo = { name: nameText, address: `自訂座標：${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng };
+  searchInfo = { name: nameText, address: `座標：${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng };
   
   searchMarker = L.marker([lat, lng], { 
     icon: L.divIcon({ 
       className: 'search-fire-marker', 
       html: `
         <div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;">
-          <div style="font-size: 34px; position: relative; z-index: 4; line-height: 1; margin-bottom: -6px; filter: drop-shadow(0 2px 4px rgba(255,59,48,0.4));">🔥</div>
-          <div class="fire-pulse"></div>
-          <div class="fire-pin"></div>
+          <div style="font-size: 34px; position: relative; z-index: 4; line-height: 1; margin-bottom: -6px; filter: drop-shadow(0 2px 4px rgba(255,59,48,0.5));">🔥</div>
+          <div class="fire-pulse"></div><div class="fire-pin"></div>
         </div>
       `,
-      iconSize: [44, 54], 
-      iconAnchor: [22, 54] 
+      iconSize: [44, 54], iconAnchor: [22, 54] 
     }), 
-    draggable: true,
-    zIndexOffset: 2000 
+    draggable: true, zIndexOffset: 2000 
   }).addTo(map);
   
   searchCircle = L.circle([lat, lng], { radius: HOSE_RADIUS, color: '#ff3b30', fillColor: '#ff3b30', fillOpacity: 0.08, weight: 2.5, dashArray: '6, 6', interactive: false }).addTo(map);
   
   searchMarker.on('dragstart', () => { vibe(); hoseLinesLayer.clearLayers(); });
-  
-  searchMarker.on('drag', function(e) { 
-    searchCircle.setLatLng(e.latlng); 
-  });
-  
-  searchMarker.on('dragend', function(e) {
+  searchMarker.on('drag', e => { searchCircle.setLatLng(e.latlng); });
+  searchMarker.on('dragend', e => {
     vibe();
     const newLat = e.target.getLatLng().lat, newLng = e.target.getLatLng().lng;
-    searchInfo.lat = newLat; searchInfo.lng = newLng; searchInfo.address = `拖曳座標：${newLat.toFixed(5)}, ${newLng.toFixed(5)}`;
+    searchInfo.lat = newLat; searchInfo.lng = newLng; 
+    searchInfo.address = `微調座標：${newLat.toFixed(5)}, ${newLng.toFixed(5)}`;
     searchCircle.setLatLng([newLat, newLng]);
     showNearby(newLat, newLng, "火點"); 
-    showStatus('已重新計算佈線距離', 2000);
   });
   
   document.getElementById('btn-clear-search').style.display = 'flex';
-  
-  // 同步點亮火點按鈕
   const btnFire = document.getElementById('btn-fire');
   if (btnFire) btnFire.classList.add('active-fire');
+
+  document.getElementById('sp-nav-tccfd').href = `https://water.tccfd.gov.tw/tccfdinfo/Water/ShowMap2Move.asp?lat=${lat}&lng=${lng}`;
 }
 
 map.on('contextmenu', e => {
-  vibe();
-  closeInfo(); closeSearchPanel();
-  createFireMarker(e.latlng.lat, e.latlng.lng, "手動定位火點");
+  vibe(); closeInfo(); closeSearchPanel();
+  createFireMarker(e.latlng.lat, e.latlng.lng, "長按標定火點");
   showNearby(e.latlng.lat, e.latlng.lng, "火點");
   focusMap(e.latlng, 17, 0.22);
-  showStatus('已定位 (長按火點可拖曳微調)', 3000);
 });
 
 const SKIP_KEYS = new Set(['name', 'description']);
 
-function showInfo(props, latlng) {
-  // 不清除連線，保留戰術記憶
+// ⭐ 顯示消防栓詳細資料與無裁切現場照片
+function showInfo(props, latlng, isAed = false) {
   closeSearchPanel(); 
 
-  document.getElementById('info-title').textContent = `${props.name}`;
+  const title = props.name || props['消防栓位置'] || '水源詳細資訊';
+  document.getElementById('info-title').textContent = title;
   
+  // 提取消防栓編號
+  const photoWrap = document.getElementById('hydrant-photo-container');
+  const photoImg = document.getElementById('hydrant-photo-img');
+  let hydrantNo = props['消防栓編號'];
+  if (!hydrantNo && props.name) {
+    const m = props.name.match(/\d+/);
+    if (m) hydrantNo = m[0];
+  }
+
+  // ⭐ 局端照片載入
+  if (!isAed && hydrantNo) {
+    currentPhotoUrl = `https://water.tccfd.gov.tw/tccfdinfo/Water/images_Flag/F${hydrantNo}-1.jpg`;
+    photoImg.src = currentPhotoUrl;
+    photoWrap.style.display = 'flex';
+  } else {
+    currentPhotoUrl = '';
+    photoWrap.style.display = 'none';
+  }
+
+  // 整理欄位排版
   let html = '';
+  if (!isAed && hydrantNo) {
+    html += `<div class="row"><span class="lbl">消防栓編號</span><span class="val" style="color:#e74c3c; font-size:15px;">#${hydrantNo}</span></div>`;
+  }
+  
   Object.entries(props).forEach(([k, v]) => {
-    if (SKIP_KEYS.has(k) || !v) return;
+    if (SKIP_KEYS.has(k) || !v || k === '消防栓編號') return;
     html += `<div class="row"><span class="lbl">${k}</span><span class="val">${v}</span></div>`;
   });
-  html += `<div class="row"><span class="lbl">座標</span><span class="val">${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}</span></div>`;
+  
+  html += `<div class="row"><span class="lbl">精準經緯度</span><span class="val">${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}</span></div>`;
   document.getElementById('info-body').innerHTML = html;
 
   const dest = `${latlng.lat},${latlng.lng}`;
   document.getElementById('info-nav-google').href = `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
   document.getElementById('info-nav-apple').href = `https://maps.apple.com/?daddr=${dest}&dirflg=d`;
+  
+  const tccfdBtn = document.getElementById('info-nav-tccfd');
+  tccfdBtn.href = `https://water.tccfd.gov.tw/tccfdinfo/Water/ShowMap2Move.asp?lat=${latlng.lat}&lng=${latlng.lng}`;
+  tccfdBtn.style.display = isAed ? 'none' : 'flex';
 
   document.getElementById('info-panel').classList.add('open');
   checkPanelsAndLegend();
@@ -1004,66 +823,62 @@ function closeInfo() {
   checkPanelsAndLegend();
 }
 
-function showNearby(lat, lng, centerName = null) {
-  closeInfo();
-  closeSearchPanel();
-  clearNearbyHighlights();
-  
-  currentNearbyLat = lat;
-  currentNearbyLng = lng;
-  
-  if (centerName) {
-    currentNearbyName = centerName;
-  } else if (searchMarker && searchInfo && searchInfo.lat === lat && searchInfo.lng === lng) {
-    currentNearbyName = "火點";
-  } else if (userLatLng && userLatLng.lat === lat && userLatLng.lng === lng) {
-    currentNearbyName = "目前位置";
-  } else {
-    currentNearbyName = "畫面中心";
-  }
+// ⭐ 照片全螢幕放大 Modal 控制
+function openPhotoModal() {
+  if (!currentPhotoUrl) return;
+  const modal = document.getElementById('photo-modal');
+  const img = document.getElementById('modal-img');
+  img.src = currentPhotoUrl;
+  modal.classList.add('show');
+}
 
-  const R = 6371000, toRad = d => d * Math.PI / 180;
+function closePhotoModal() {
+  document.getElementById('photo-modal').classList.remove('show');
+}
+
+let highlightedPoints = [];
+
+function getDistanceMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function showNearby(lat, lng, centerName = null) {
+  closeInfo(); closeSearchPanel(); clearNearbyHighlights();
   
+  currentNearbyLat = lat; currentNearbyLng = lng;
+  
+  if (centerName) currentNearbyName = centerName;
+  else if (searchMarker && searchInfo && searchInfo.lat === lat && searchInfo.lng === lng) currentNearbyName = "火點";
+  else if (userLatLng && userLatLng.lat === lat && userLatLng.lng === lng) currentNearbyName = "目前位置";
+  else currentNearbyName = "地圖中心";
+
   allPoints.forEach(pt => {
-    const dLat = toRad(pt.latlng.lat - lat), dLng = toRad(pt.latlng.lng - lng);
-    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat)) * Math.cos(toRad(pt.latlng.lat)) * Math.sin(dLng/2)**2;
-    pt.dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    pt.dist = getDistanceMeters(lat, lng, pt.latlng.lat, pt.latlng.lng);
   });
 
   nearbyItems = [...allPoints].sort((a, b) => a.dist - b.dist).slice(0, nearbyCount);
-  const nearbySet = new Set(nearbyItems);
+  highlightedPoints = [...nearbyItems];
 
   nearbyItems.forEach((pt, i) => {
     pt.marker.setOpacity(0); 
-    
     const hlMarker = L.marker(pt.latlng, { icon: typeToIcon(pt.type, true, i + 1), zIndexOffset: 1000 + i }).addTo(highlightLayer);
     hlMarker.on('click', e => { 
-        vibe(); 
-        L.DomEvent.stopPropagation(e); 
-        showInfo(pt.properties, pt.latlng); 
-        focusMap(pt.latlng, null, 0.15);
+        vibe(); L.DomEvent.stopPropagation(e); 
+        showInfo(pt.properties, pt.latlng); focusMap(pt.latlng, null, 0.15);
     });
     
-    let distColor = pt.dist < 100 ? '#34c759' : (pt.dist < 300 ? '#ff9500' : '#ff3b30');
-    
-    L.polyline([pt.latlng, [lat, lng]], { 
-      color: distColor, weight: 4, opacity: 0.8, dashArray: '10, 10', lineCap: 'round',
-      className: 'flowing-line'
-    }).addTo(hoseLinesLayer);
+    const distColor = pt.dist < 100 ? '#34c759' : (pt.dist < 300 ? '#ff9500' : '#ff3b30');
+    L.polyline([pt.latlng, [lat, lng]], { color: distColor, weight: 4, opacity: 0.85, dashArray: '10, 10', lineCap: 'round', className: 'flowing-line' }).addTo(hoseLinesLayer);
   });
 
-  allPoints.forEach(pt => {
-    if (!nearbySet.has(pt)) {
-      pt.marker.setIcon(typeToIcon(pt.type, false, null));
-      pt.marker.setOpacity(1.0); 
-    }
-  });
-
-  // ⭐ UI 更新：直線距離
   document.getElementById('nearby-list').innerHTML = nearbyItems.map((item, i) => {
     const p = item.properties, name = p.name;
     const dm = item.dist < 1000 ? `${Math.round(item.dist)}m` : `${(item.dist/1000).toFixed(1)}km`;
-    
+    const hoseCount = Math.max(1, Math.ceil(item.dist / HOSE_LENGTH));
     const distClass = item.dist < 100 ? 'dist-near' : item.dist < 300 ? 'dist-mid' : 'dist-far';
     const typeLabel = item.type === 'below' ? '地下式' : '地上式';
     const bg = item.type === 'below' ? '#f39c12' : '#e74c3c';
@@ -1075,25 +890,35 @@ function showNearby(lat, lng, centerName = null) {
           <div class="item-title">${name}</div>
           <div class="item-subtitle">
             <span class="type-tag">${typeLabel}</span>
-            <span class="dist-text">直線距離 ${dm}</span>
+            <span class="hose-tag">約需 ${hoseCount} 條水帶</span>
+            <span class="dist-text">${dm}</span>
           </div>
         </div>
         <a class="nav-button" href="https://www.google.com/maps/dir/?api=1&destination=${item.latlng.lat},${item.latlng.lng}&travelmode=driving" target="_blank" onclick="vibe(); event.stopPropagation()">導航</a>
       </div>`;
   }).join('');
 
-  document.getElementById('nearby-title').textContent = `附近 5 支 (${currentNearbyName})`;
+  document.getElementById('nearby-title').textContent = `附近 ${nearbyCount} 支水源 (${currentNearbyName})`;
   updateShareLineLink();
   
-  // 主動展開清單
   nearbyPanelVisible = true;
   document.getElementById('nearby-panel').classList.add('open');
-  
   checkPanelsAndLegend();
 }
 
+function changeNearbyCount(count) {
+  nearbyCount = count;
+  document.querySelectorAll('.count-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.trim() === String(count));
+  });
+  if (currentNearbyLat && currentNearbyLng) {
+    showNearby(currentNearbyLat, currentNearbyLng, currentNearbyName);
+  }
+}
+
 function flyTo(idx) {
-  const item = nearbyItems[idx]; if (!item) return;
+  const item = nearbyItems[idx]; 
+  if (!item) return;
   showInfo(item.properties, item.latlng); 
   focusMap(item.latlng, 18, 0.22); 
 }
@@ -1101,10 +926,13 @@ function flyTo(idx) {
 function clearNearbyHighlights() {
   highlightLayer.clearLayers();
   hoseLinesLayer.clearLayers(); 
-  allPoints.forEach(pt => {
-    pt.marker.setIcon(typeToIcon(pt.type, false, null));
-    pt.marker.setOpacity(1.0); 
-  });
+  if (highlightedPoints.length > 0) {
+    highlightedPoints.forEach(pt => {
+      pt.marker.setIcon(typeToIcon(pt.type, false, null));
+      pt.marker.setOpacity(1.0);
+    });
+    highlightedPoints = [];
+  }
   nearbyItems = [];
 }
 
@@ -1112,72 +940,74 @@ function toggleNearbyPanel() {
   if (nearbyPanelVisible) {
     closeNearby();
   } else {
-    closeInfo(); 
-    closeSearchPanel(); 
-
+    closeInfo(); closeSearchPanel(); 
     if (searchMarker && searchInfo) {
       showNearby(searchInfo.lat, searchInfo.lng, "火點");
       focusMap([searchInfo.lat, searchInfo.lng], null, 0.22);
     } else if (userLatLng) {
       showNearby(userLatLng.lat, userLatLng.lng, "目前位置");
       focusMap(userLatLng, null, 0.22);
-      showStatus('以目前位置為中心尋找', 2000);
     } else {
       const center = map.getCenter();
-      showNearby(center.lat, center.lng, "畫面中心");
-      showStatus('尚未定位，以畫面中心尋找', 2000);
+      showNearby(center.lat, center.lng, "地圖中心");
     }
   }
 }
 
-// ⭐ 關閉面板時，保留地圖上的高亮連線 (戰術記憶)
 function closeNearby() { 
   nearbyPanelVisible = false;
   document.getElementById('nearby-panel').classList.remove('open'); 
   checkPanelsAndLegend();
 }
 
-// ⭐ 分享文字更新：直線距離 + 🧯 圖示
 function generateShareText() {
   if (!nearbyItems.length) return '';
-  
   let refText = currentNearbyName || '目前位置';
-  if (currentNearbyName === "火點" && searchInfo) {
-      refText = searchInfo.address || searchInfo.name || "火警地點";
-  }
+  if (currentNearbyName === "火點" && searchInfo) refText = searchInfo.address || searchInfo.name || "火警地點";
 
-  let text = `🔥 參考地點：${refText}\n`;
+  let text = `🔥【火場水源派遣資訊】\n📍 參考目標：${refText}\n`;
   if (currentNearbyLat && currentNearbyLng) {
-      text += `Google Maps：\nhttps://www.google.com/maps/dir/?api=1&destination=${currentNearbyLat},${currentNearbyLng}\n`;
+      text += `🗺️ Google 地圖：https://www.google.com/maps/dir/?api=1&destination=${currentNearbyLat},${currentNearbyLng}\n`;
+      text += `🚒 局端查察圖：https://water.tccfd.gov.tw/tccfdinfo/Water/ShowMap2Move.asp?lat=${currentNearbyLat}&lng=${currentNearbyLng}\n`;
   }
   
-  text += `\n🧯 附近消防栓資訊\n`;
+  text += `\n🧯【最鄰近 ${nearbyItems.length} 支消防栓】\n`;
   nearbyItems.forEach((item, i) => {
-    const p = item.properties; const name = p.name || '消防栓';
+    const p = item.properties, name = p.name || '消防栓';
     const dm = item.dist < 1000 ? `${Math.round(item.dist)}m` : `${(item.dist/1000).toFixed(1)}km`;
-    text += `\n${i + 1}. ${name} - 直線距離 ${dm}\n導航：https://www.google.com/maps/dir/?api=1&destination=${item.latlng.lat},${item.latlng.lng}\n`;
+    const typeLabel = item.type === 'below' ? '地下' : '地上';
+    const hoseCount = Math.max(1, Math.ceil(item.dist / HOSE_LENGTH));
+    
+    text += `\n${i + 1}. [${typeLabel}] ${name}\n`;
+    text += `   📏 距離：${dm} (約需 ${hoseCount} 條水帶)\n`;
+    text += `   🧭 導航：https://www.google.com/maps/dir/?api=1&destination=${item.latlng.lat},${item.latlng.lng}\n`;
   });
   return text;
 }
 
 function copyNearbyInfo() {
-  const text = generateShareText(); if (!text) return;
+  const text = generateShareText(); 
+  if (!text) return;
   navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('btn-copy-nearby'); btn.classList.add('copied'); btn.innerHTML = '✅ 已複製';
-    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '📋 複製'; }, 2000); showStatus('已複製資訊', 2000);
+    const btn = document.getElementById('btn-copy-nearby'); 
+    btn.classList.add('copied'); btn.innerHTML = '✅ 已複製';
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '📋 複製'; }, 2000); 
+    showStatus('已複製火場水源回報文字', 2000);
   });
 }
 
 function updateShareLineLink() {
-  const text = generateShareText(); const lineBtn = document.getElementById('btn-share-line');
-  if (!text) lineBtn.style.display = 'none'; else { lineBtn.style.display = 'flex'; lineBtn.href = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`; }
+  const text = generateShareText(); 
+  const lineBtn = document.getElementById('btn-share-line');
+  if (!text) lineBtn.style.display = 'none';
+  else { lineBtn.style.display = 'flex'; lineBtn.href = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`; }
 }
 
 function initDrag(panelId, dragId, closeFn) { 
     const p = document.getElementById(panelId), d = document.getElementById(dragId); 
     let startY = 0, curY = 0, drag = false; 
     d.addEventListener('pointerdown', e => { 
-        if (window.innerWidth >= 769) return; 
+        if (isDesktopView()) return; 
         startY = e.clientY; drag = true; p.style.transition = 'none'; 
         try{e.target.setPointerCapture(e.pointerId);}catch(err){} 
     }, { passive: true }); 
@@ -1190,7 +1020,7 @@ function initDrag(panelId, dragId, closeFn) {
     d.addEventListener('pointerup', e => { 
         if (!drag) return; 
         drag = false; p.style.transition = ''; 
-        if (curY > 80) closeFn(); else p.style.transform = ''; 
+        if (curY > 70) closeFn(); else p.style.transform = ''; 
         try{e.target.releasePointerCapture(e.pointerId);}catch(err){} 
     }); 
 }
@@ -1203,202 +1033,172 @@ let debounceTimer;
 const searchInput = document.getElementById('search-input');
 const suggestionsBox = document.getElementById('search-suggestions');
 
-searchInput.addEventListener('input', (e) => {
+searchInput.addEventListener('input', e => {
   clearTimeout(debounceTimer);
   const q = e.target.value.trim();
-  
   if (!q) {
     suggestionsBox.style.display = 'none';
     document.getElementById('btn-clear-search').style.display = 'none';
     return;
   }
-  
   document.getElementById('btn-clear-search').style.display = 'flex';
-
-  debounceTimer = setTimeout(() => {
-    fetchSuggestions(q);
-  }, 400); 
+  debounceTimer = setTimeout(() => fetchSuggestions(q), 350); 
 });
 
 async function fetchSuggestions(query) {
-  // 已移除強制加上台中市的邏輯
+  const localMatches = allPoints.filter(pt => {
+    const name = pt.properties.name || '';
+    const addr = pt.properties['設置地址'] || pt.properties['消防栓位置'] || '';
+    return name.includes(query) || addr.includes(query);
+  }).slice(0, 3);
+
   let searchQuery = query;
+  if (!searchQuery.includes('台中') && !searchQuery.includes('臺中') && !searchQuery.includes('市')) {
+    searchQuery = '台中市' + searchQuery;
+  }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=tw&limit=5&addressdetails=1`, { 
-      headers: { 'Accept-Language': 'zh-TW' } 
+      headers: { 'Accept-Language': 'zh-TW' }, signal: controller.signal
     });
+    clearTimeout(timeoutId);
     const data = await res.json();
-    
-    if (data.length === 0) {
-      suggestionsBox.style.display = 'none';
-      return;
-    }
-    renderSuggestions(data);
+    renderSuggestions(data, localMatches);
   } catch (err) {
-    console.error('Autocomplete error:', err);
+    if (localMatches.length > 0) renderLocalSuggestions(localMatches);
+    else suggestionsBox.style.display = 'none';
   }
 }
 
-function renderSuggestions(results) {
+function renderSuggestions(results, localMatches = []) {
   suggestionsBox.innerHTML = '';
+  localMatches.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'suggestion-item';
+    div.innerHTML = `<div class="suggestion-title">🚒 ${item.properties.name}</div><div class="suggestion-subtitle">本地消防栓資料</div>`;
+    div.addEventListener('click', () => {
+      vibe(); searchInput.value = item.properties.name; searchInput.blur(); suggestionsBox.style.display = 'none';
+      createFireMarker(item.latlng.lat, item.latlng.lng, item.properties.name);
+      showNearby(item.latlng.lat, item.latlng.lng, "火點"); focusMap(item.latlng, 17, 0.25);
+    });
+    suggestionsBox.appendChild(div);
+  });
+
   results.forEach(item => {
     const div = document.createElement('div');
     div.className = 'suggestion-item';
-    
     const parts = item.display_name.split(', ');
-    const title = parts[0];
-    const subtitle = parts.slice(1).join(', ');
-
-    div.innerHTML = `
-      <div class="suggestion-title">${title}</div>
-      <div class="suggestion-subtitle">${subtitle}</div>
-    `;
-    
+    div.innerHTML = `<div class="suggestion-title">📍 ${parts[0]}</div><div class="suggestion-subtitle">${parts.slice(1).join(', ')}</div>`;
     div.addEventListener('click', () => {
-      vibe();
-      searchInput.value = title;
-      searchInput.blur(); 
-      suggestionsBox.style.display = 'none';
-      
-      const lat = parseFloat(item.lat);
-      const lng = parseFloat(item.lon);
-      
-      closeSearchPanel();
-      createFireMarker(lat, lng, title);
-      showNearby(lat, lng, "火點"); 
-      focusMap([lat, lng], 17, 0.27); 
-      showStatus(`已精準定位`, 3000);
+      vibe(); searchInput.value = parts[0]; searchInput.blur(); suggestionsBox.style.display = 'none';
+      const lat = parseFloat(item.lat), lng = parseFloat(item.lon);
+      closeSearchPanel(); createFireMarker(lat, lng, parts[0]);
+      showNearby(lat, lng, "火點"); focusMap([lat, lng], 17, 0.25); 
     });
-    
     suggestionsBox.appendChild(div);
   });
   suggestionsBox.style.display = 'flex';
 }
 
-document.addEventListener('click', (e) => {
-  if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
-    suggestionsBox.style.display = 'none';
-  }
+function renderLocalSuggestions(localMatches) {
+  suggestionsBox.innerHTML = '';
+  localMatches.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'suggestion-item';
+    div.innerHTML = `<div class="suggestion-title">🚒 ${item.properties.name}</div><div class="suggestion-subtitle">本地水源</div>`;
+    div.addEventListener('click', () => {
+      vibe(); searchInput.value = item.properties.name; searchInput.blur(); suggestionsBox.style.display = 'none';
+      createFireMarker(item.latlng.lat, item.latlng.lng, item.properties.name);
+      showNearby(item.latlng.lat, item.latlng.lng, "火點"); focusMap(item.latlng, 17, 0.25);
+    });
+    suggestionsBox.appendChild(div);
+  });
+  suggestionsBox.style.display = 'flex';
+}
+
+document.addEventListener('click', e => {
+  if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) suggestionsBox.style.display = 'none';
 });
 
 searchInput.addEventListener('keydown', e => { 
-  if (e.key === 'Enter' && !e.isComposing) {
-    suggestionsBox.style.display = 'none';
-    doSearch(); 
-  }
+  if (e.key === 'Enter' && !e.isComposing) { suggestionsBox.style.display = 'none'; doSearch(); }
 });
 
 async function doSearch() {
   let q = document.getElementById('search-input').value.trim(); 
   if (!q) return;
 
-  // 已移除強制加上台中市的邏輯
+  const localMatch = allPoints.find(pt => (pt.properties.name || '').includes(q));
+  if (localMatch) {
+    searchInput.blur(); closeInfo();
+    createFireMarker(localMatch.latlng.lat, localMatch.latlng.lng, localMatch.properties.name);
+    showNearby(localMatch.latlng.lat, localMatch.latlng.lng, "火點");
+    focusMap(localMatch.latlng, 17, 0.25);
+    showStatus(`已定位消防栓：${localMatch.properties.name}`, 3000);
+    return;
+  }
 
-  showStatus('搜尋中…', 0); 
-  searchInput.blur(); 
-  closeInfo();
+  if (!q.includes('台中') && !q.includes('臺中') && !q.includes('市')) q = '台中市' + q;
+  showStatus('搜尋中…', 0); searchInput.blur(); closeInfo();
   
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=tw&limit=1`, { 
-      headers: { 'Accept-Language': 'zh-TW' } 
-    });
-    
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=tw&limit=1`, { headers: { 'Accept-Language': 'zh-TW' } });
     const data = await res.json();
-    if (!data.length) { 
-      showStatus('找不到該地址，請嘗試輸入更完整的路名', 3000); 
-      return; 
-    }
-
+    if (!data.length) { showStatus('找不到該地址，請嘗試輸入更完整的路名', 3000); return; }
     const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon); 
     const parts = data[0].display_name.split(',');
-    
-    closeSearchPanel();
-    createFireMarker(lat, lng, parts[0].trim());
-    showNearby(lat, lng, "火點"); 
-    focusMap([lat, lng], 17, 0.27); 
-    showStatus(`已定位 (長按火點可拖曳微調)`, 3000);
-    
+    closeSearchPanel(); createFireMarker(lat, lng, parts[0].trim());
+    showNearby(lat, lng, "火點"); focusMap([lat, lng], 17, 0.25); 
+    showStatus(`已定位火點 (長按可微調)`, 3000);
   } catch (err) { 
-    console.error(err);
-    showStatus('搜尋系統連線失敗，請稍後再試', 3000); 
+    showStatus('搜尋連線異常，請手動長按地圖標定', 3000); 
   }
 }
 
-function showSearchPanel(info) {
-  closeNearby(); 
-  closeInfo();
-  
-  document.getElementById('search-panel-title').textContent = info.name; const bodyEl = document.getElementById('search-panel-body');
-  if(info.name.includes("定位") && info.address.includes("座標")) { bodyEl.textContent = info.address; bodyEl.style.display = ''; } 
-  else { bodyEl.textContent = info.address !== info.name ? info.address : ''; bodyEl.style.display = info.address && info.address !== info.name ? '' : 'none'; }
-  const dest = `${info.lat},${info.lng}`; document.getElementById('sp-nav-google').href = `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`; document.getElementById('sp-nav-apple').href = `https://maps.apple.com/?daddr=${dest}&dirflg=d`; 
-  
-  document.getElementById('search-panel').classList.add('open');
-  checkPanelsAndLegend();
-}
-function closeSearchPanel() { 
-  document.getElementById('search-panel').classList.remove('open'); 
-  checkPanelsAndLegend();
-}
+function closeSearchPanel() { document.getElementById('search-panel').classList.remove('open'); checkPanelsAndLegend(); }
 
-// ⭐ 關閉火點時，強制切回定位連線
 function clearSearch() { 
   if (searchMarker) { map.removeLayer(searchMarker); searchMarker = null; } 
   if (searchCircle) { map.removeLayer(searchCircle); searchCircle = null; } 
   document.getElementById('search-input').value = ''; 
   document.getElementById('btn-clear-search').style.display = 'none'; 
-  suggestionsBox.style.display = 'none';
-  searchInfo = null; 
-  closeSearchPanel();
+  suggestionsBox.style.display = 'none'; searchInfo = null; closeSearchPanel();
 
-  // 同步熄滅火點按鈕
   const btnFire = document.getElementById('btn-fire');
   if (btnFire) btnFire.classList.remove('active-fire');
 
-  // 若有GPS訊號，強制重算周遭並畫連線
   if (userLatLng) {
-      showNearby(userLatLng.lat, userLatLng.lng, "目前位置");
-      focusMap(userLatLng, null, 0.22);
-      showStatus('火點解除，連線恢復至目前位置', 2000);
+      showNearby(userLatLng.lat, userLatLng.lng, "目前位置"); focusMap(userLatLng, null, 0.22);
   } else {
       const center = map.getCenter();
-      showNearby(center.lat, center.lng, "畫面中心");
-      showStatus('火點解除，連線恢復至畫面中心', 2000);
+      showNearby(center.lat, center.lng, "地圖中心");
   }
 }
 
-// ⭐ 按下定位按鈕時，主動展開面板！
 function locateMe() {
-  if (!navigator.geolocation) { showStatus('不支援定位', 3000); return; }
-  
+  if (!navigator.geolocation) { showStatus('裝置不支援 GPS 定位', 3000); return; }
   requestOrientationPermission();
   
-  // 若已定位過，再次按下會拉回視角，並「展開」附近水源面板
   if (watchId && userLatLng) { 
     focusMap(userLatLng, 17, 0.22); 
-    if (!searchMarker) {
-        showNearby(userLatLng.lat, userLatLng.lng, "目前位置");
-    }
-    showStatus('已更新目前位置', 2000); 
+    if (!searchMarker) showNearby(userLatLng.lat, userLatLng.lng, "目前位置");
+    showStatus('已拉回目前位置', 2000); 
     return; 
   }
 
-  showStatus('定位中…', 0);
+  showStatus('GPS 定位中…', 0);
   let firstFix = true;
   watchId = navigator.geolocation.watchPosition(pos => {
     const { latitude: lat, longitude: lng, accuracy } = pos.coords; 
     userLatLng = L.latLng(lat, lng);
 
-    // 動態 GPS 誤差光暈
     if (!userHalo) {
-        userHalo = L.circle(userLatLng, { 
-            radius: accuracy, color: '#007aff', fillColor: '#007aff', 
-            fillOpacity: 0.12, weight: 1, interactive: false 
-        }).addTo(map);
+        userHalo = L.circle(userLatLng, { radius: accuracy, color: '#007aff', fillColor: '#007aff', fillOpacity: 0.1, weight: 1, interactive: false }).addTo(map);
     } else {
-        userHalo.setLatLng(userLatLng);
-        userHalo.setRadius(accuracy);
+        userHalo.setLatLng(userLatLng); userHalo.setRadius(accuracy);
     }
 
     if (!userDot) {
@@ -1407,63 +1207,50 @@ function locateMe() {
         html: `
           <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
             <div class="user-dot-pulse" style="position: absolute;"></div>
-            <div id="user-heading-arrow" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transition: transform 0.1s ease-out; z-index: 2; transform-origin: center center;">
-              <svg style="filter: drop-shadow(0px 3px 4px rgba(0,0,0,0.6));" width="38" height="42" viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg">
+            <div id="user-heading-arrow" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transition: transform 0.15s ease-out; z-index: 2; transform-origin: center center;">
+              <svg style="filter: drop-shadow(0px 3px 4px rgba(0,0,0,0.6));" width="36" height="40" viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg">
                 <path d="M14 0 L28 32 L14 24 L0 32 Z" fill="#007aff" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
               </svg>
             </div>
           </div>
         `,
-        iconSize: [44, 44],
-        iconAnchor: [22, 22]
+        iconSize: [44, 44], iconAnchor: [22, 22]
       });
-
       userDot = L.marker(userLatLng, { icon: headingIcon, zIndexOffset: 900, interactive: false }).addTo(map);
     } else {
       userDot.setLatLng(userLatLng);
     }
 
     if (firstFix) {
-      firstFix = false; 
-      focusMap(userLatLng, 17, 0.22); 
-      if (!searchMarker) {
-          showNearby(lat, lng, "目前位置"); // 自動展開面板
-      }
-      showStatus('已定位', 3000);
+      firstFix = false; focusMap(userLatLng, 17, 0.22); 
+      if (!searchMarker) showNearby(lat, lng, "目前位置");
+      showStatus('GPS 定位成功', 2500);
     } else {
-      // 背景靜默更新（如果面板本來就開著才更新）
-      if (nearbyPanelVisible && !searchMarker) {
-        showNearby(lat, lng, "目前位置"); 
-      }
+      if (nearbyPanelVisible && !searchMarker) showNearby(lat, lng, "目前位置"); 
     }
-  }, err => { showStatus('定位失敗', 4000); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 });
+  }, err => { showStatus('GPS 定位失敗，請授權定位權限', 3500); }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 3000 });
 }
 
 function handleOrientation(event) {
   let heading = null;
-  if (event.webkitCompassHeading) {
-    heading = event.webkitCompassHeading;
-  } else if (event.absolute && event.alpha !== null) {
-    heading = 360 - event.alpha;
-  } else if (event.alpha !== null) {
-    heading = 360 - event.alpha; 
-  }
+  if (event.webkitCompassHeading) heading = event.webkitCompassHeading;
+  else if (event.alpha !== null) heading = 360 - event.alpha;
   
   if (heading !== null) {
+    let diff = heading - smoothHeading;
+    while (diff < -180) diff += 360;
+    while (diff > 180) diff -= 360;
+    smoothHeading = (smoothHeading + diff * 0.25 + 360) % 360;
     const arrow = document.getElementById('user-heading-arrow');
-    if (arrow) arrow.style.transform = `rotate(${heading}deg)`;
+    if (arrow) arrow.style.transform = `rotate(${smoothHeading}deg)`;
   }
 }
 
 function requestOrientationPermission() {
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission()
-      .then(permissionState => {
-        if (permissionState === 'granted') {
-          window.addEventListener('deviceorientation', handleOrientation, true);
-        }
-      })
-      .catch(console.error);
+    DeviceOrientationEvent.requestPermission().then(state => {
+      if (state === 'granted') window.addEventListener('deviceorientation', handleOrientation, true);
+    }).catch(console.error);
   } else {
     window.addEventListener('deviceorientationabsolute', handleOrientation, true);
     window.addEventListener('deviceorientation', handleOrientation, true);
@@ -1471,7 +1258,6 @@ function requestOrientationPermission() {
 }
 
 function toggleMapMode() {
-  const btn = document.getElementById('switch-theme');
   if (mapMode === 'light') {
     mapMode = 'dark'; document.body.classList.add('dark-mode'); currentTileLayer.setUrl(layerDark); showStatus('切換為夜間模式', 2000);
   } else if (mapMode === 'dark') {
@@ -1485,8 +1271,7 @@ function toggleMapMode() {
 
 function toggleHoseLines() { 
   hoseLinesVisible = !hoseLinesVisible; 
-  if (hoseLinesVisible) { map.addLayer(hoseLinesLayer); } 
-  else { map.removeLayer(hoseLinesLayer); }
+  if (hoseLinesVisible) map.addLayer(hoseLinesLayer); else map.removeLayer(hoseLinesLayer);
   localStorage.setItem('tacticalHoseLines', hoseLinesVisible);
   updateLayerSwitches();
   showStatus(hoseLinesVisible ? '開啟水帶連線' : '關閉水帶連線', 2000); 
@@ -1494,61 +1279,39 @@ function toggleHoseLines() {
 
 function toggleAll() { 
   layerVisible = !layerVisible; 
-  if (layerVisible) { map.addLayer(layerGroup); } 
-  else { map.removeLayer(layerGroup); }
+  if (layerVisible) map.addLayer(layerGroup); else map.removeLayer(layerGroup);
   localStorage.setItem('tacticalLayerVisible', layerVisible);
   updateLayerSwitches();
-  showStatus(layerVisible ? '顯示全部水源' : '僅保留附近 5 支水源', 2000); 
+  showStatus(layerVisible ? '顯示全部水源' : '僅保留附近水源', 2000); 
 }
 
-function showStatus(msg, duration) { const el = document.getElementById('status'); el.textContent = msg; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', duration); }
-
-// ⭐ 動態開啟消防局圖資系統 (自動判斷台中或高雄)
-function openGISMap() {
-  vibe();
-  let targetLat, targetLng;
-  
-  if (searchMarker && searchInfo) {
-    targetLat = searchInfo.lat;
-    targetLng = searchInfo.lng;
-  } else if (userLatLng) {
-    targetLat = userLatLng.lat;
-    targetLng = userLatLng.lng;
-  } else {
-    const center = map.getCenter();
-    targetLat = center.lat;
-    targetLng = center.lng;
-  }
-  
-  let url = '';
-  // 利用緯度 23.5 當作簡單的南北分界線 (約在嘉義)
-  if (targetLat < 23.5) {
-    // 高雄市圖資 (緯度約 22~23)
-    url = `https://rescueinfo.fdkc.gov.tw/Water/ShowMap2.asp?Lat=${targetLat}&Lng=${targetLng}&Range=2000&id_pk=&reurl=&pmts=`;
-  } else {
-    // 台中市圖資 (緯度約 24)
-    url = `https://water.tccfd.gov.tw/tccfdinfo/Water/ShowMap2Move.asp?lat=${targetLat}&lng=${targetLng}`;
-  }
-  
-  window.open(url, '_blank');
+function showStatus(msg, duration) { 
+  const el = document.getElementById('status'); el.textContent = msg; el.style.display = 'block'; 
+  if (duration > 0) setTimeout(() => el.style.display = 'none', duration); 
 }
 
-if (window.DeviceOrientationEvent) {
-  window.addEventListener('deviceorientation', function(event) {
-    let heading = null;
-    if (event.webkitCompassHeading) {
-      heading = event.webkitCompassHeading;
-    } else if (event.absolute && event.alpha !== null) {
-      heading = 360 - event.alpha;
-    } else if (event.alpha !== null) {
-      heading = 360 - event.alpha; 
-    }
-    if (heading !== null) {
-      const arrow = document.getElementById('user-heading-arrow');
-      if (arrow) arrow.style.transform = `rotate(${heading}deg)`;
-    }
-  }, true);
+if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function') {
+  window.addEventListener('deviceorientation', handleOrientation, true);
 }
+
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (map) map.invalidateSize({ animate: false });
+    checkPanelsAndLegend();
+  }, 120);
+});
+
+window.addEventListener('orientationchange', () => {
+  document.documentElement.classList.add('is-rotating');
+  if (map) map.invalidateSize({ animate: false });
+  setTimeout(() => {
+    if (map) map.invalidateSize({ animate: false });
+    checkPanelsAndLegend();
+    document.documentElement.classList.remove('is-rotating');
+  }, 320);
+});
 </script>
 </body>
 </html>
