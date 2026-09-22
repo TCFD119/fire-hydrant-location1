@@ -585,6 +585,23 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   await loadHydrantData();
   await loadAEDs();
+  
+  // ⭐ 新增功能：讀取網址參數，別人點連結後自動定位火點
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('lat') && urlParams.has('lng')) {
+      const fireLat = parseFloat(urlParams.get('lat'));
+      const fireLng = parseFloat(urlParams.get('lng'));
+      
+      if (!isNaN(fireLat) && !isNaN(fireLng)) {
+          // 延遲一點點執行，確保地圖渲染順暢
+          setTimeout(() => {
+              createFireMarker(fireLat, fireLng, "分享的火警點");
+              showNearby(fireLat, fireLng, "火點");
+              focusMap([fireLat, fireLng], 17, 0.22);
+              showStatus('已載入接收的火警定位', 3000);
+          }, 400);
+      }
+  }
 });
 
 async function loadHydrantData() {
@@ -967,7 +984,12 @@ function generateShareText() {
 
   let text = `🔥【火場水源派遣資訊】\n📍 參考目標：${refText}\n`;
   if (currentNearbyLat && currentNearbyLng) {
-      text += `🗺️ Google 地圖：https://www.google.com/maps/dir/?api=1&destination=${currentNearbyLat},${currentNearbyLng}\n`;
+      // ⭐ 取得目前的網頁網址，並加上新的 lat 與 lng 參數
+      const baseUrl = window.location.href.split('?')[0].split('#')[0];
+      const shareUrl = `${baseUrl}?lat=${currentNearbyLat}&lng=${currentNearbyLng}`;
+      
+      text += `\n🌐 開啟戰術地圖 (直接看圖)：\n${shareUrl}\n`;
+      text += `\n🗺️ Google 地圖：https://www.google.com/maps/dir/?api=1&destination=${currentNearbyLat},${currentNearbyLng}\n`;
       text += `🚒 局端查察圖：https://water.tccfd.gov.tw/tccfdinfo/Water/ShowMap2Move.asp?lat=${currentNearbyLat}&lng=${currentNearbyLng}\n`;
   }
   
