@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>🚒 中山分隊消防栓地圖 (局端實景照片完整版)</title>
+  <title>🚒 中山分隊消防栓地圖 (局端實景與Google搜尋整合版)</title>
   
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -131,55 +131,24 @@
     
     .nav-button { background: #007aff; color: #fff; text-decoration: none; font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 14px; flex-shrink: 0; margin-left: 8px; box-shadow: 0 3px 10px rgba(0, 122, 255, 0.25); }
 
-    /* ⭐ 局端實景照片容器 (完整顯示不裁切 + 點擊全螢幕放大) */
+    /* ⭐ 局端實景照片容器 */
     .hydrant-photo-wrap {
-      margin: 0 16px 12px;
-      border-radius: 16px;
-      background: #111;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      border: 1px solid rgba(0,0,0,0.1);
-      cursor: zoom-in;
-      min-height: 120px;
+      margin: 0 16px 12px; border-radius: 16px; background: #111; position: relative; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; border: 1px solid rgba(0,0,0,0.1); cursor: zoom-in; min-height: 120px;
     }
-    .hydrant-photo {
-      width: 100%;
-      height: auto;
-      max-height: 260px;
-      object-fit: contain; /* ⭐ 核心：完整保留全圖比例，徹底不裁切 */
-      display: block;
-      transition: transform 0.2s ease;
-    }
+    .hydrant-photo { width: 100%; height: auto; max-height: 260px; object-fit: contain; display: block; transition: transform 0.2s ease; }
     .hydrant-photo:active { transform: scale(0.98); }
-    .photo-tag {
-      position: absolute; bottom: 8px; right: 8px;
-      background: rgba(0,0,0,0.75); color: #fff;
-      font-size: 11px; padding: 3px 8px; border-radius: 8px; font-weight: 600;
-      backdrop-filter: blur(4px);
-    }
-    .photo-zoom-hint {
-      position: absolute; top: 8px; right: 8px;
-      background: rgba(0,0,0,0.65); color: #fff;
-      font-size: 11px; padding: 3px 8px; border-radius: 8px; font-weight: 600;
-      backdrop-filter: blur(4px);
-    }
+    .photo-tag { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.75); color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 8px; font-weight: 600; backdrop-filter: blur(4px); }
+    .photo-zoom-hint { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.65); color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 8px; font-weight: 600; backdrop-filter: blur(4px); }
 
-    /* ⭐ 照片全螢幕檢視彈窗 (Lightbox Modal) */
+    /* ⭐ 照片全螢幕檢視彈窗 */
     #photo-modal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999;
-      display: none; align-items: center; justify-content: center; padding: 16px;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999; display: none; align-items: center; justify-content: center; padding: 16px;
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
     #photo-modal.show { display: flex; animation: fade-in 0.2s ease; }
     #modal-img { max-width: 96vw; max-height: 88vh; object-fit: contain; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
-    #modal-close-btn {
-      position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); right: 20px;
-      background: rgba(255,255,255,0.2); color: #fff; border: none; width: 44px; height: 44px;
-      border-radius: 50%; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-    }
+    #modal-close-btn { position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); right: 20px; background: rgba(255,255,255,0.2); color: #fff; border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
     #info-panel { overflow-y: auto; }
@@ -200,9 +169,7 @@
     .btn-primary-large { width: 100%; background: linear-gradient(135deg, #ff4b4b, #ff3b30); color: #fff; box-shadow: 0 6px 20px rgba(255, 59, 48, 0.3); border-radius: 22px; font-size: 15px; font-weight: 700; padding: 12px; }
 
     #primary-controls {
-      position: fixed; right: 16px; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); 
-      display: flex; flex-direction: column; align-items: center; background: rgba(255, 255, 255, 0.88); backdrop-filter: saturate(180%) blur(20px); 
-      border-radius: 32px; padding: 6px; z-index: 700; box-shadow: 0 6px 24px rgba(0,0,0,0.12); border: 1px solid rgba(0, 0, 0, 0.05);
+      position: fixed; right: 16px; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; background: rgba(255, 255, 255, 0.88); backdrop-filter: saturate(180%) blur(20px); border-radius: 32px; padding: 6px; z-index: 700; box-shadow: 0 6px 24px rgba(0,0,0,0.12); border: 1px solid rgba(0, 0, 0, 0.05);
     }
     .fab-btn { background: transparent; border: none; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; color: #1c1c1e; display: flex; align-items: center; justify-content: center; font-size: 22px; }
     .fab-btn.primary { background: #007aff; color: #ffffff; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); margin-top: 2px; }
@@ -210,10 +177,7 @@
     .fab-divider { width: 32px; height: 1px; background: rgba(0,0,0,0.08); margin: 4px 0; }
 
     #layer-menu {
-        position: fixed; right: 80px; bottom: calc(180px + env(safe-area-inset-bottom, 0px)); 
-        background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(24px); display: flex; flex-direction: column; padding: 12px; border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); border: 1px solid rgba(0,0,0,0.08); z-index: 700; opacity: 0; pointer-events: none; transform: translateX(20px) scale(0.95);
-        transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: bottom right;
+        position: fixed; right: 80px; bottom: calc(180px + env(safe-area-inset-bottom, 0px)); background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(24px); display: flex; flex-direction: column; padding: 12px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); border: 1px solid rgba(0,0,0,0.08); z-index: 700; opacity: 0; pointer-events: none; transform: translateX(20px) scale(0.95); transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: bottom right;
     }
     #layer-menu.open { opacity: 1; pointer-events: auto; transform: translateX(0) scale(1); }
     .layer-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 10px 6px; font-size: 14px; font-weight: 700; color: #1c1c1e; cursor: pointer; }
@@ -224,11 +188,7 @@
     .toggle-switch.on::after { transform: translateX(20px); }
 
     #legend { 
-      position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 16px; 
-      background: rgba(255, 255, 255, 0.88); backdrop-filter: saturate(180%) blur(20px); 
-      border-radius: 20px; padding: 9px 14px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); 
-      z-index: 700; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; 
-      border: 1px solid rgba(0, 0, 0, 0.05); flex-wrap: wrap; max-width: calc(100vw - 90px); color: #1c1c1e;
+      position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 16px; background: rgba(255, 255, 255, 0.88); backdrop-filter: saturate(180%) blur(20px); border-radius: 20px; padding: 9px 14px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); z-index: 700; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(0, 0, 0, 0.05); flex-wrap: wrap; max-width: calc(100vw - 90px); color: #1c1c1e;
     }
     #legend.hidden { opacity: 0; pointer-events: none; transform: translateY(10px); }
     .leg { display: flex; align-items: center; gap: 5px; white-space: nowrap; flex-shrink: 0; }
@@ -311,21 +271,16 @@
 <div id="nearby-panel" class="bottom-sheet glass-panel">
   <div class="sheet-drag-handle" id="nearby-drag"></div>
   <div class="panel-top" style="flex-direction: column; align-items: stretch; gap: 12px; padding-bottom: 12px;">
-    <!-- 第一列：標題與關閉按鈕 -->
     <div style="display: flex; align-items: center; justify-content: space-between;">
       <div class="panel-title" id="nearby-title" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 10px;">附近水源</div>
       <button class="panel-close" onclick="vibe(); closeNearby()" style="margin-left: 12px;">✕</button>
     </div>
-    
-    <!-- 第二列：數量選擇與操作按鈕 -->
     <div style="display: flex; gap: 8px; align-items: center;">
       <div class="count-selector" id="count-selector" style="margin-left: 0;">
         <button class="count-btn" onclick="vibe(); changeNearbyCount(3)">3</button>
         <button class="count-btn active" onclick="vibe(); changeNearbyCount(5)">5</button>
         <button class="count-btn" onclick="vibe(); changeNearbyCount(10)">10</button>
       </div>
-      
-      <!-- 利用 margin-left: auto 將複製與 LINE 按鈕推至畫面最右側 -->
       <button class="action-btn" id="btn-copy-nearby" onclick="vibe(); copyNearbyInfo()" style="margin-left: auto;">📋 複製</button>
       <a class="action-btn line-btn" id="btn-share-line" href="#" target="_blank" style="display: none;">💬 LINE</a>
     </div>
@@ -361,7 +316,6 @@
     <button class="panel-close" onclick="vibe(); closeInfo()">✕</button>
   </div>
   
-  <!-- ⭐ 官方現場實景照片區 (完整比例呈現 + 點擊放大) -->
   <div id="hydrant-photo-container" class="hydrant-photo-wrap" style="display: none;" onclick="vibe(); openPhotoModal();">
     <img id="hydrant-photo-img" class="hydrant-photo" src="" alt="局端現場實景照片" onerror="document.getElementById('hydrant-photo-container').style.display='none';">
     <div class="photo-zoom-hint">🔍 點擊放大</div>
@@ -430,10 +384,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script>
-// ═══════════════════════════════════════════════
-//  核心設定與狀態變數
-// ═══════════════════════════════════════════════
-const MAP_CENTER = [24.1493, 120.7058]; // 中山分隊預設坐標
+const MAP_CENTER = [24.1493, 120.7058]; 
 const MAP_ZOOM = 15;
 const HOSE_RADIUS = 100; 
 const HOSE_LENGTH = 20;  
@@ -456,13 +407,7 @@ let currentNearbyLat = null, currentNearbyLng = null, currentNearbyName = null;
 
 const TAIWAN_BOUNDS = L.latLngBounds(L.latLng(21.5, 119.5), L.latLng(25.5, 122.5));
 const map = L.map('map', { 
-  center: MAP_CENTER, 
-  zoom: MAP_ZOOM, 
-  zoomControl: false, 
-  preferCanvas: true,
-  maxBounds: TAIWAN_BOUNDS,
-  maxBoundsViscosity: 0.8,
-  minZoom: 8
+  center: MAP_CENTER, zoom: MAP_ZOOM, zoomControl: false, preferCanvas: true, maxBounds: TAIWAN_BOUNDS, maxBoundsViscosity: 0.8, minZoom: 8
 });
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -472,9 +417,7 @@ const layerLight = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x
 const layerDark = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_25x4_1_dba3c60e71a1bf4a15dd3069';
 const layerSat = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'; 
 
-let currentTileLayer = L.tileLayer(layerLight, { 
-  attribution: '© OpenStreetMap contributors', subdomains: 'abcd', maxZoom: 20 
-}).addTo(map);
+let currentTileLayer = L.tileLayer(layerLight, { attribution: '© OpenStreetMap contributors', subdomains: 'abcd', maxZoom: 20 }).addTo(map);
 
 map.on('dragstart', () => {
     document.getElementById('search-suggestions').style.display = 'none';
@@ -586,14 +529,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadHydrantData();
   await loadAEDs();
   
-  // ⭐ 新增功能：讀取網址參數，別人點連結後自動定位火點
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has('lat') && urlParams.has('lng')) {
       const fireLat = parseFloat(urlParams.get('lat'));
       const fireLng = parseFloat(urlParams.get('lng'));
       
       if (!isNaN(fireLat) && !isNaN(fireLng)) {
-          // 延遲一點點執行，確保地圖渲染順暢
           setTimeout(() => {
               createFireMarker(fireLat, fireLng, "分享的火警點");
               showNearby(fireLat, fireLng, "火點");
@@ -649,11 +590,11 @@ async function loadHydrantData() {
 
 function initFallbackData() {
   const samples = [
-    { '消防栓編號': '18534', name: '新福里新福路66巷36弄60號旁', '設置地址': '臺中市太平區新福里新福路66巷36弄60號旁', lat: 24.14961026, lng: 120.70389444, type: 'below', 種類: '地下', 型式: '五角開關', 標誌: '無', 管徑: '100mm', 轄區: '中山分隊' },
-    { '消防栓編號': '18536', name: '新福路66巷36弄31號側邊', '設置地址': '臺中市太平區新福路66巷36弄31號側邊（機車格）', lat: 24.1495203, lng: 120.70445859, type: 'below', 種類: '地下', 型式: '五角開關', 標誌: '無', 管徑: '100mm', 轄區: '中山分隊' },
-    { '消防栓編號': '5627',  name: '新福里振福路和振福路126巷口', '設置地址': '臺中市太平區新福里振福路和振福路126巷口', lat: 24.14756616, lng: 120.70452332, type: 'below', 種類: '地下', 型式: '五角開關', 標誌: '無', 管徑: '150mm', 轄區: '中山分隊' },
-    { '消防栓編號': '13744', name: '東英十七街1號（與東英路口）', '設置地址': '臺中市東區東英十七街1號（與東英路口）', lat: 24.14792595, lng: 120.70641696, type: 'above', 種類: '地上', 型式: '五角開關', 標誌: '無', 管徑: '100mm', 轄區: '中山分隊' },
-    { '消防栓編號': '5624',  name: '新福里振福路195號前', '設置地址': '臺中市太平區新福里振福路195號前', lat: 24.14932475, lng: 120.7058443, type: 'below', 種類: '地下', 型式: '五角開關', 標誌: '無', 管徑: '150mm', 轄區: '中山分隊' }
+    { '消防栓編號': '18534', name: '新福里新福路66巷36弄60號旁', '設置地址': '臺中市太平區新福里新福路66巷36弄60號旁', lat: 24.14961026, lng: 120.70389444, type: 'below', 種類: '地下', 型式: '五角開關', 管徑: '100mm', 轄區: '中山分隊' },
+    { '消防栓編號': '18536', name: '新福路66巷36弄31號側邊', '設置地址': '臺中市太平區新福路66巷36弄31號側邊（機車格）', lat: 24.1495203, lng: 120.70445859, type: 'below', 種類: '地下', 型式: '五角開關', 管徑: '100mm', 轄區: '中山分隊' },
+    { '消防栓編號': '5627',  name: '新福里振福路和振福路126巷口', '設置地址': '臺中市太平區新福里振福路和振福路126巷口', lat: 24.14756616, lng: 120.70452332, type: 'below', 種類: '地下', 型式: '五角開關', 管徑: '150mm', 轄區: '中山分隊' },
+    { '消防栓編號': '13744', name: '東英十七街1號（與東英路口）', '設置地址': '臺中市東區東英十七街1號（與東英路口）', lat: 24.14792595, lng: 120.70641696, type: 'above', 種類: '地上', 型式: '五角開關', 管徑: '100mm', 轄區: '中山分隊' },
+    { '消防栓編號': '5624',  name: '新福里振福路195號前', '設置地址': '臺中市太平區新福里振福路195號前', lat: 24.14932475, lng: 120.7058443, type: 'below', 種類: '地下', 型式: '五角開關', 管徑: '150mm', 轄區: '中山分隊' }
   ];
 
   samples.forEach(s => {
@@ -783,14 +724,12 @@ map.on('contextmenu', e => {
 
 const SKIP_KEYS = new Set(['name', 'description']);
 
-// ⭐ 顯示消防栓詳細資料與無裁切現場照片
 function showInfo(props, latlng, isAed = false) {
   closeSearchPanel(); 
 
   const title = props.name || props['消防栓位置'] || '水源詳細資訊';
   document.getElementById('info-title').textContent = title;
   
-  // 提取消防栓編號
   const photoWrap = document.getElementById('hydrant-photo-container');
   const photoImg = document.getElementById('hydrant-photo-img');
   let hydrantNo = props['消防栓編號'];
@@ -799,7 +738,6 @@ function showInfo(props, latlng, isAed = false) {
     if (m) hydrantNo = m[0];
   }
 
-  // ⭐ 局端照片載入
   if (!isAed && hydrantNo) {
     currentPhotoUrl = `https://water.tccfd.gov.tw/tccfdinfo/Water/images_Flag/F${hydrantNo}-1.jpg`;
     photoImg.src = currentPhotoUrl;
@@ -809,7 +747,6 @@ function showInfo(props, latlng, isAed = false) {
     photoWrap.style.display = 'none';
   }
 
-  // 整理欄位排版
   let html = '';
   if (!isAed && hydrantNo) {
     html += `<div class="row"><span class="lbl">消防栓編號</span><span class="val" style="color:#e74c3c; font-size:15px;">#${hydrantNo}</span></div>`;
@@ -840,7 +777,6 @@ function closeInfo() {
   checkPanelsAndLegend();
 }
 
-// ⭐ 照片全螢幕放大 Modal 控制
 function openPhotoModal() {
   if (!currentPhotoUrl) return;
   const modal = document.getElementById('photo-modal');
@@ -984,13 +920,12 @@ function generateShareText() {
 
   let text = `🔥【火場水源派遣資訊】\n📍 參考目標：${refText}\n`;
   if (currentNearbyLat && currentNearbyLng) {
-      // ⭐ 取得目前的網頁網址，並加上新的 lat 與 lng 參數
       const baseUrl = window.location.href.split('?')[0].split('#')[0];
       const shareUrl = `${baseUrl}?lat=${currentNearbyLat}&lng=${currentNearbyLng}`;
       
       text += `\n🌐 開啟戰術地圖 (直接看圖)：\n${shareUrl}\n`;
       text += `\n🗺️ Google 地圖：https://www.google.com/maps/dir/?api=1&destination=${currentNearbyLat},${currentNearbyLng}\n`;
-      text += `\n🚒 局端查察圖：https://water.tccfd.gov.tw/tccfdinfo/Water/ShowMap2Move.asp?lat=${currentNearbyLat}&lng=${currentNearbyLng}\n`;
+      text += `🚒 局端查察圖：https://water.tccfd.gov.tw/tccfdinfo/Water/ShowMap2Move.asp?lat=${currentNearbyLat}&lng=${currentNearbyLng}\n`;
   }
   
   text += `\n🧯【最鄰近 ${nearbyItems.length} 支消防栓】\n`;
@@ -1080,16 +1015,28 @@ async function fetchSuggestions(query) {
   }
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500);
-
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=tw&limit=5&addressdetails=1`, { 
-      headers: { 'Accept-Language': 'zh-TW' }, signal: controller.signal
-    });
-    clearTimeout(timeoutId);
+    const gasUrl = 'https://script.google.com/macros/s/AKfycbyUNnMF0Yuv1ohajGJbij7SjfcJRaWP9QalvY-_P_fMwqawWeLzOX1n7KD3yZiYTk7Qkg/exec';
+    const res = await fetch(`${gasUrl}?q=${encodeURIComponent(searchQuery)}`);
     const data = await res.json();
-    renderSuggestions(data, localMatches);
+    
+    if (data.status !== 'OK' || !data.results || data.results.length === 0) {
+      if (localMatches.length > 0) renderLocalSuggestions(localMatches);
+      else suggestionsBox.style.display = 'none';
+      return;
+    }
+
+    const formattedData = data.results.slice(0, 5).map(item => {
+      let title = item.formatted_address.replace(/^台灣/, '').trim(); 
+      return {
+        display_name: title + ", Google Maps 精準定位", 
+        lat: item.geometry.location.lat,
+        lon: item.geometry.location.lng
+      };
+    });
+
+    renderSuggestions(formattedData, localMatches);
   } catch (err) {
+    console.error('Autocomplete error:', err);
     if (localMatches.length > 0) renderLocalSuggestions(localMatches);
     else suggestionsBox.style.display = 'none';
   }
@@ -1164,40 +1111,53 @@ async function doSearch() {
   }
 
   if (!q.includes('台中') && !q.includes('臺中') && !q.includes('市')) q = '台中市' + q;
-  showStatus('搜尋中…', 0); searchInput.blur(); closeInfo();
+  showStatus('Google 精準定位中…', 0); searchInput.blur(); closeInfo();
   
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=tw&limit=1`, { headers: { 'Accept-Language': 'zh-TW' } });
+    const gasUrl = 'https://script.google.com/macros/s/AKfycbyUNnMF0Yuv1ohajGJbij7SjfcJRaWP9QalvY-_P_fMwqawWeLzOX1n7KD3yZiYTk7Qkg/exec';
+    const res = await fetch(`${gasUrl}?q=${encodeURIComponent(q)}`);
     const data = await res.json();
-    if (!data.length) { showStatus('找不到該地址，請嘗試輸入更完整的路名', 3000); return; }
-    const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon); 
-    const parts = data[0].display_name.split(',');
-    closeSearchPanel(); createFireMarker(lat, lng, parts[0].trim());
-    showNearby(lat, lng, "火點"); focusMap([lat, lng], 17, 0.25); 
-    showStatus(`已定位火點 (長按可微調)`, 3000);
+    
+    if (data.status !== 'OK' || !data.results || data.results.length === 0) { 
+      showStatus('找不到該地址，請嘗試輸入更完整的路名', 3000); 
+      return; 
+    }
+
+    const lat = parseFloat(data.results[0].geometry.location.lat);
+    const lng = parseFloat(data.results[0].geometry.location.lng); 
+    const title = data.results[0].formatted_address.replace(/^台灣/, '').trim();
+    
+    closeSearchPanel(); 
+    createFireMarker(lat, lng, title);
+    showNearby(lat, lng, "火點"); 
+    focusMap([lat, lng], 17, 0.25); 
+    showStatus(`已精準定位 (長按火點可拖曳微調)`, 3000);
   } catch (err) { 
-    showStatus('搜尋連線異常，請手動長按地圖標定', 3000); 
+    console.error(err);
+    showStatus('搜尋系統連線異常，請手動長按地圖標定', 3000); 
   }
 }
 
 function closeSearchPanel() { document.getElementById('search-panel').classList.remove('open'); checkPanelsAndLegend(); }
 
+// ⭐ 關鍵修正：移除火點時，同步清空連線並收起面板
 function clearSearch() { 
   if (searchMarker) { map.removeLayer(searchMarker); searchMarker = null; } 
   if (searchCircle) { map.removeLayer(searchCircle); searchCircle = null; } 
+  
   document.getElementById('search-input').value = ''; 
   document.getElementById('btn-clear-search').style.display = 'none'; 
-  suggestionsBox.style.display = 'none'; searchInfo = null; closeSearchPanel();
+  suggestionsBox.style.display = 'none'; 
+  searchInfo = null; 
+  closeSearchPanel();
 
   const btnFire = document.getElementById('btn-fire');
   if (btnFire) btnFire.classList.remove('active-fire');
 
-  if (userLatLng) {
-      showNearby(userLatLng.lat, userLatLng.lng, "目前位置"); focusMap(userLatLng, null, 0.22);
-  } else {
-      const center = map.getCenter();
-      showNearby(center.lat, center.lng, "地圖中心");
-  }
+  // 徹底清除地圖上的高亮連線，並收起附近水源面板
+  clearNearbyHighlights();
+  closeNearby();
+  showStatus('火點與連線已解除', 2000);
 }
 
 function locateMe() {
