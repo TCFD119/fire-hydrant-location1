@@ -17,6 +17,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   
+  <!-- 加入 Google Maps API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDEVygJaX-E_KEfQSY-dKkku89RmFyaswk&libraries=places&language=zh-TW&region=TW"></script>
+
   <style>
     html.is-rotating, html.is-rotating * { transition: none !important; animation: none !important; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -149,7 +152,7 @@
       width: 100%;
       height: auto;
       max-height: 260px;
-      object-fit: contain; /* ⭐ 核心：完整保留全圖比例，徹底不裁切 */
+      object-fit: contain;
       display: block;
       transition: transform 0.2s ease;
     }
@@ -311,21 +314,16 @@
 <div id="nearby-panel" class="bottom-sheet glass-panel">
   <div class="sheet-drag-handle" id="nearby-drag"></div>
   <div class="panel-top" style="flex-direction: column; align-items: stretch; gap: 12px; padding-bottom: 12px;">
-    <!-- 第一列：標題與關閉按鈕 -->
     <div style="display: flex; align-items: center; justify-content: space-between;">
       <div class="panel-title" id="nearby-title" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 10px;">附近水源</div>
       <button class="panel-close" onclick="vibe(); closeNearby()" style="margin-left: 12px;">✕</button>
     </div>
-    
-    <!-- 第二列：數量選擇與操作按鈕 -->
     <div style="display: flex; gap: 8px; align-items: center;">
       <div class="count-selector" id="count-selector" style="margin-left: 0;">
         <button class="count-btn" onclick="vibe(); changeNearbyCount(3)">3</button>
         <button class="count-btn active" onclick="vibe(); changeNearbyCount(5)">5</button>
         <button class="count-btn" onclick="vibe(); changeNearbyCount(10)">10</button>
       </div>
-      
-      <!-- 利用 margin-left: auto 將複製與 LINE 按鈕推至畫面最右側 -->
       <button class="action-btn" id="btn-copy-nearby" onclick="vibe(); copyNearbyInfo()" style="margin-left: auto;">📋 複製</button>
       <a class="action-btn line-btn" id="btn-share-line" href="#" target="_blank" style="display: none;">💬 LINE</a>
     </div>
@@ -361,7 +359,6 @@
     <button class="panel-close" onclick="vibe(); closeInfo()">✕</button>
   </div>
   
-  <!-- ⭐ 官方現場實景照片區 (完整比例呈現 + 點擊放大) -->
   <div id="hydrant-photo-container" class="hydrant-photo-wrap" style="display: none;" onclick="vibe(); openPhotoModal();">
     <img id="hydrant-photo-img" class="hydrant-photo" src="" alt="局端現場實景照片" onerror="document.getElementById('hydrant-photo-container').style.display='none';">
     <div class="photo-zoom-hint">🔍 點擊放大</div>
@@ -433,7 +430,7 @@
 // ═══════════════════════════════════════════════
 //  核心設定與狀態變數
 // ═══════════════════════════════════════════════
-const MAP_CENTER = [24.1493, 120.7058]; // 中山分隊預設坐標
+const MAP_CENTER = [24.1493, 120.7058]; 
 const MAP_ZOOM = 15;
 const HOSE_RADIUS = 100; 
 const HOSE_LENGTH = 20;  
@@ -586,14 +583,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadHydrantData();
   await loadAEDs();
   
-  // ⭐ 新增功能：讀取網址參數，別人點連結後自動定位火點
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has('lat') && urlParams.has('lng')) {
       const fireLat = parseFloat(urlParams.get('lat'));
       const fireLng = parseFloat(urlParams.get('lng'));
       
       if (!isNaN(fireLat) && !isNaN(fireLng)) {
-          // 延遲一點點執行，確保地圖渲染順暢
           setTimeout(() => {
               createFireMarker(fireLat, fireLng, "分享的火警點");
               showNearby(fireLat, fireLng, "火點");
@@ -783,14 +778,12 @@ map.on('contextmenu', e => {
 
 const SKIP_KEYS = new Set(['name', 'description']);
 
-// ⭐ 顯示消防栓詳細資料與無裁切現場照片
 function showInfo(props, latlng, isAed = false) {
   closeSearchPanel(); 
 
   const title = props.name || props['消防栓位置'] || '水源詳細資訊';
   document.getElementById('info-title').textContent = title;
   
-  // 提取消防栓編號
   const photoWrap = document.getElementById('hydrant-photo-container');
   const photoImg = document.getElementById('hydrant-photo-img');
   let hydrantNo = props['消防栓編號'];
@@ -799,7 +792,6 @@ function showInfo(props, latlng, isAed = false) {
     if (m) hydrantNo = m[0];
   }
 
-  // ⭐ 局端照片載入
   if (!isAed && hydrantNo) {
     currentPhotoUrl = `https://water.tccfd.gov.tw/tccfdinfo/Water/images_Flag/F${hydrantNo}-1.jpg`;
     photoImg.src = currentPhotoUrl;
@@ -809,7 +801,6 @@ function showInfo(props, latlng, isAed = false) {
     photoWrap.style.display = 'none';
   }
 
-  // 整理欄位排版
   let html = '';
   if (!isAed && hydrantNo) {
     html += `<div class="row"><span class="lbl">消防栓編號</span><span class="val" style="color:#e74c3c; font-size:15px;">#${hydrantNo}</span></div>`;
@@ -840,7 +831,6 @@ function closeInfo() {
   checkPanelsAndLegend();
 }
 
-// ⭐ 照片全螢幕放大 Modal 控制
 function openPhotoModal() {
   if (!currentPhotoUrl) return;
   const modal = document.getElementById('photo-modal');
@@ -984,7 +974,6 @@ function generateShareText() {
 
   let text = `🔥【火場水源派遣資訊】\n📍 參考目標：${refText}\n`;
   if (currentNearbyLat && currentNearbyLng) {
-      // ⭐ 取得目前的網頁網址，並加上新的 lat 與 lng 參數
       const baseUrl = window.location.href.split('?')[0].split('#')[0];
       const shareUrl = `${baseUrl}?lat=${currentNearbyLat}&lng=${currentNearbyLng}`;
       
@@ -1067,6 +1056,7 @@ searchInput.addEventListener('input', e => {
   debounceTimer = setTimeout(() => fetchSuggestions(q), 350); 
 });
 
+// ⭐ 替換為 Google Places API 自動補全
 async function fetchSuggestions(query) {
   const localMatches = allPoints.filter(pt => {
     const name = pt.properties.name || '';
@@ -1074,29 +1064,36 @@ async function fetchSuggestions(query) {
     return name.includes(query) || addr.includes(query);
   }).slice(0, 3);
 
+  if (typeof google === 'undefined') {
+    if (localMatches.length > 0) renderLocalSuggestions(localMatches);
+    else suggestionsBox.style.display = 'none';
+    return;
+  }
+
   let searchQuery = query;
   if (!searchQuery.includes('台中') && !searchQuery.includes('臺中') && !searchQuery.includes('市')) {
     searchQuery = '台中市' + searchQuery;
   }
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500);
-
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=tw&limit=5&addressdetails=1`, { 
-      headers: { 'Accept-Language': 'zh-TW' }, signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    const data = await res.json();
-    renderSuggestions(data, localMatches);
-  } catch (err) {
-    if (localMatches.length > 0) renderLocalSuggestions(localMatches);
-    else suggestionsBox.style.display = 'none';
-  }
+  const service = new google.maps.places.AutocompleteService();
+  service.getPlacePredictions({
+    input: searchQuery,
+    componentRestrictions: { country: 'tw' },
+    language: 'zh-TW'
+  }, (predictions, status) => {
+    if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
+      if (localMatches.length > 0) renderLocalSuggestions(localMatches);
+      else suggestionsBox.style.display = 'none';
+      return;
+    }
+    renderGoogleSuggestions(predictions, localMatches);
+  });
 }
 
-function renderSuggestions(results, localMatches = []) {
+function renderGoogleSuggestions(predictions, localMatches = []) {
   suggestionsBox.innerHTML = '';
+  
+  // 保留本地消防栓匹配
   localMatches.forEach(item => {
     const div = document.createElement('div');
     div.className = 'suggestion-item';
@@ -1109,17 +1106,39 @@ function renderSuggestions(results, localMatches = []) {
     suggestionsBox.appendChild(div);
   });
 
-  results.forEach(item => {
+  // Google Maps API 自動補全結果
+  predictions.forEach(item => {
     const div = document.createElement('div');
     div.className = 'suggestion-item';
-    const parts = item.display_name.split(', ');
-    div.innerHTML = `<div class="suggestion-title">📍 ${parts[0]}</div><div class="suggestion-subtitle">${parts.slice(1).join(', ')}</div>`;
+    
+    const title = item.structured_formatting.main_text;
+    const subtitle = item.structured_formatting.secondary_text || '';
+
+    div.innerHTML = `<div class="suggestion-title">📍 ${title}</div><div class="suggestion-subtitle">${subtitle}</div>`;
+    
     div.addEventListener('click', () => {
-      vibe(); searchInput.value = parts[0]; searchInput.blur(); suggestionsBox.style.display = 'none';
-      const lat = parseFloat(item.lat), lng = parseFloat(item.lon);
-      closeSearchPanel(); createFireMarker(lat, lng, parts[0]);
-      showNearby(lat, lng, "火點"); focusMap([lat, lng], 17, 0.25); 
+      vibe();
+      searchInput.value = title;
+      searchInput.blur(); 
+      suggestionsBox.style.display = 'none';
+      
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ placeId: item.place_id }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const lat = results[0].geometry.location.lat();
+          const lng = results[0].geometry.location.lng();
+          
+          closeSearchPanel();
+          createFireMarker(lat, lng, title);
+          showNearby(lat, lng, "火點"); 
+          focusMap([lat, lng], 17, 0.25); 
+          showStatus(`已精準定位`, 3000);
+        } else {
+          showStatus('座標轉換失敗', 3000);
+        }
+      });
     });
+    
     suggestionsBox.appendChild(div);
   });
   suggestionsBox.style.display = 'flex';
@@ -1149,6 +1168,7 @@ searchInput.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.isComposing) { suggestionsBox.style.display = 'none'; doSearch(); }
 });
 
+// ⭐ 替換為 Google Geocoding API
 async function doSearch() {
   let q = document.getElementById('search-input').value.trim(); 
   if (!q) return;
@@ -1166,22 +1186,32 @@ async function doSearch() {
   if (!q.includes('台中') && !q.includes('臺中') && !q.includes('市')) q = '台中市' + q;
   showStatus('搜尋中…', 0); searchInput.blur(); closeInfo();
   
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=tw&limit=1`, { headers: { 'Accept-Language': 'zh-TW' } });
-    const data = await res.json();
-    if (!data.length) { showStatus('找不到該地址，請嘗試輸入更完整的路名', 3000); return; }
-    const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon); 
-    const parts = data[0].display_name.split(',');
-    closeSearchPanel(); createFireMarker(lat, lng, parts[0].trim());
-    showNearby(lat, lng, "火點"); focusMap([lat, lng], 17, 0.25); 
-    showStatus(`已定位火點 (長按可微調)`, 3000);
-  } catch (err) { 
-    showStatus('搜尋連線異常，請手動長按地圖標定', 3000); 
+  if (typeof google === 'undefined') {
+    showStatus('Google API 尚未載入', 3000);
+    return;
   }
+
+  const geocoder = new google.maps.Geocoder();
+  geocoder.geocode({ address: q, componentRestrictions: { country: 'TW' } }, (results, status) => {
+    if (status === 'OK' && results[0]) {
+      const lat = results[0].geometry.location.lat();
+      const lng = results[0].geometry.location.lng();
+      const formattedAddress = results[0].formatted_address.replace(/^台灣/, '').trim();
+      
+      closeSearchPanel();
+      createFireMarker(lat, lng, formattedAddress);
+      showNearby(lat, lng, "火點"); 
+      focusMap([lat, lng], 17, 0.25); 
+      showStatus(`已精準定位`, 3000);
+    } else {
+      showStatus('找不到該地址，請嘗試輸入更完整的路名', 3000); 
+    }
+  });
 }
 
 function closeSearchPanel() { document.getElementById('search-panel').classList.remove('open'); checkPanelsAndLegend(); }
 
+// ⭐ 關閉火點時，徹底清除所有連線與高亮
 function clearSearch() { 
   if (searchMarker) { map.removeLayer(searchMarker); searchMarker = null; } 
   if (searchCircle) { map.removeLayer(searchCircle); searchCircle = null; } 
@@ -1192,12 +1222,10 @@ function clearSearch() {
   const btnFire = document.getElementById('btn-fire');
   if (btnFire) btnFire.classList.remove('active-fire');
 
-  if (userLatLng) {
-      showNearby(userLatLng.lat, userLatLng.lng, "目前位置"); focusMap(userLatLng, null, 0.22);
-  } else {
-      const center = map.getCenter();
-      showNearby(center.lat, center.lng, "地圖中心");
-  }
+  // 徹底清除地圖上的高亮圖示與連線，並關閉底部清單
+  clearNearbyHighlights();
+  closeNearby();
+  showStatus('火點與水源連線已清除', 2000);
 }
 
 function locateMe() {
